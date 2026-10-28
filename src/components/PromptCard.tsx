@@ -45,19 +45,19 @@ export const PromptCard: React.FC<PromptCardProps> = ({
   return (
     <div
       onClick={() => onOpenDetails(prompt)}
-      className="group relative bg-[#13151f] hover:bg-[#171926] border border-[#23263b] hover:border-purple-500/40 rounded-2xl p-4 transition-all duration-300 flex flex-col justify-between cursor-pointer shadow-lg hover:shadow-purple-950/20"
+      className="group relative bg-[#13151f] hover:bg-[#171926] border border-[#23263b] hover:border-purple-500/40 rounded-2xl p-2.5 sm:p-4 transition-all duration-300 flex flex-col justify-between cursor-pointer shadow-lg hover:shadow-purple-950/20"
     >
       <div>
         {/* Cabeçalho do Card: Categorias & Ações de Admin */}
-        <div className="flex items-center justify-between gap-2 mb-3">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {categoryName && (
-              <span className="px-2.5 py-1 rounded-md text-[11px] font-medium bg-[#1d2030] text-slate-300 border border-[#2b3049]">
-                {categoryName}
-              </span>
+            <div className="flex items-center justify-between gap-1 sm:gap-2 mb-2 sm:mb-3">
+              <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
+                {categoryName && (
+                    <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-[11px] font-medium bg-[#1d2030] text-slate-300 border border-[#2b3049]">
+                      {categoryName}
+                    </span>
             )}
-            {prompt.tags && prompt.tags.length > 0 && (
-              <span className="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-purple-950/60 text-purple-300 border border-purple-800/50">
+                    {prompt.tags && prompt.tags.length > 0 && (
+              <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-[11px] font-semibold bg-purple-950/60 text-purple-300 border border-purple-800/50">
                 {prompt.tags[0]}
               </span>
             )}
@@ -115,73 +115,73 @@ export const PromptCard: React.FC<PromptCardProps> = ({
         </div>
 
         {/* Mídia demonstrativa dinâmica (respeita proporção natural 9:16, 16:9, 1:1 sem corte) */}
-        {prompt.media_url && !mediaError && (
-          <div className="relative w-full rounded-xl overflow-hidden mb-3 bg-[#0a0b10] border border-[#23263b] flex items-center justify-center">
-            {prompt.media_type === 'video' ? (
-              <video
-                src={prompt.media_url}
-                className="w-full max-h-96 object-contain rounded-xl"
-                muted
-                loop
-                playsInline
-                onMouseOver={(e) => e.currentTarget.play()}
-                onMouseOut={(e) => e.currentTarget.pause()}
-              />
-            ) : (
-              <img
-                src={prompt.media_url}
-                alt={prompt.title}
-                onError={() => setMediaError(true)}
-                className="w-full max-h-96 object-contain rounded-xl transition-transform duration-300"
-                loading="lazy"
-              />
-            )}
-            <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-md text-[10px] text-slate-200 border border-white/10 flex items-center gap-1 pointer-events-none">
-              <ImageIcon className="w-3 h-3 text-purple-400" />
-              <span>Preview</span>
-            </div>
-          </div>
+                {prompt.media_url && !mediaError && (
+                    <div className="relative w-full rounded-xl overflow-hidden mb-2.5 sm:mb-3 bg-[#0a0b10] border border-[#23263b] flex items-center justify-center">
+                      {prompt.media_type === 'video' ? (
+                        <video
+                          src={prompt.media_url}
+                          className="w-full max-h-56 sm:max-h-96 object-contain rounded-xl"
+                          muted
+                          loop
+                          playsInline
+                          onMouseOver={(e) => e.currentTarget.play()}
+                          onMouseOut={(e) => e.currentTarget.pause()}
+                        />
+                      ) : (
+                        <img
+                          src={prompt.media_url}
+                          alt={prompt.title}
+                          onError={() => setMediaError(true)}
+                          className="w-full max-h-56 sm:max-h-96 object-contain rounded-xl transition-transform duration-300"
+                          loading="lazy"
+                        />
+                      )}
+                        <div className="absolute bottom-1.5 left-1.5 sm:bottom-2 sm:left-2 px-1.5 sm:px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-md text-[9px] sm:text-[10px] text-slate-200 border border-white/10 flex items-center gap-1 pointer-events-none">
+                          <ImageIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-purple-400" />
+                          <span>Preview</span>
+                        </div>
+                      </div>
         )}
 
-        {/* Título */}
-        <h3 className="text-base font-semibold text-slate-100 group-hover:text-purple-300 transition-colors mb-2 line-clamp-1">
-          {prompt.title}
-        </h3>
+                      {/* Título */}
+                        <h3 className="text-xs sm:text-base font-semibold text-slate-100 group-hover:text-purple-300 transition-colors mb-1.5 sm:mb-2 line-clamp-1">
+                          {prompt.title}
+                        </h3>
 
-        {/* Descrição */}
-        {prompt.description && (
-          <p className="text-xs text-slate-400 line-clamp-2 mb-3">
-            {prompt.description}
-          </p>
+                        {/* Descrição */}
+                        {prompt.description && (
+                            <p className="text-[11px] sm:text-xs text-slate-400 line-clamp-1 sm:line-clamp-2 mb-2 sm:mb-3">
+                              {prompt.description}
+                            </p>
         )}
 
-        {/* Código do Prompt */}
-        <div className="p-3 rounded-xl bg-[#0b0c12] border border-[#1e202e] text-slate-300 font-mono text-xs leading-relaxed max-h-24 overflow-hidden relative">
-          <div className="line-clamp-3">
-            {renderHighlightedContent(prompt.content)}
-          </div>
-          <div className="absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-[#0b0c12] to-transparent pointer-events-none" />
-        </div>
-      </div>
+                            {/* Código do Prompt */}
+                                <div className="p-2 sm:p-3 rounded-xl bg-[#0b0c12] border border-[#1e202e] text-slate-300 font-mono text-[10px] sm:text-xs leading-relaxed max-h-16 sm:max-h-24 overflow-hidden relative">
+                                  <div className="line-clamp-2 sm:line-clamp-3">
+                                    {renderHighlightedContent(prompt.content)}
+                                  </div>
+                                  <div className="absolute inset-x-0 bottom-0 h-4 sm:h-6 bg-gradient-to-t from-[#0b0c12] to-transparent pointer-events-none" />
+                                </div>
+                              </div>
 
-      {/* Rodapé */}
-      <div className="mt-4 pt-3 border-t border-[#1e2133] flex items-center justify-between gap-2">
-        <div className="flex items-center gap-3 text-xs text-slate-400">
-          <span className="flex items-center gap-1">
-            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-            <span className="font-medium text-slate-300">Curado</span>
-          </span>
-          <span className="flex items-center gap-1 text-[11px] text-emerald-400">
-            <CheckCircle2 className="w-3 h-3" />
-            <span>Verificado</span>
-          </span>
-        </div>
+                              {/* Rodapé */}
+                                  <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 border-t border-[#1e2133] flex items-center justify-between gap-1 sm:gap-2">
+                                    <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs text-slate-400">
+                                      <span className="flex items-center gap-1">
+                                        <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-purple-400" />
+                                        <span className="font-medium text-slate-300 hidden sm:inline">Curado</span>
+                                      </span>
+                                        <span className="flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-[11px] text-emerald-400">
+                                          <CheckCircle2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                                          <span className="hidden sm:inline">Verificado</span>
+                                        </span>
+                                    </div>
 
-        <CopyPromptButton
-          content={prompt.content}
-          variant="compact"
-        />
-      </div>
-    </div>
-  );
+                                    <CopyPromptButton
+                                      content={prompt.content}
+                                      variant="compact"
+                                    />
+                                  </div>
+                                </div>
+                                );
 };

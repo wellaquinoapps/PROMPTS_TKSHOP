@@ -110,7 +110,7 @@ export const App: React.FC = () => {
       <div className="min-h-screen bg-[#0c0d12] text-slate-100 flex flex-col justify-center items-center p-4">
         <LoginModal
           isOpen={true}
-          onSuccess={() => {}}
+          onSuccess={() => { }}
         />
       </div>
     );
@@ -282,11 +282,10 @@ export const App: React.FC = () => {
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
               <button
                 onClick={() => setSelectedCategory(null)}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
-                  selectedCategory === null
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${selectedCategory === null
                     ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40 border border-purple-400'
                     : 'bg-[#131520] text-slate-400 border border-[#23273c] hover:bg-[#1a1d2e]'
-                }`}
+                  }`}
               >
                 <Layers className="w-3.5 h-3.5" />
                 <span>Todos</span>
@@ -298,11 +297,10 @@ export const App: React.FC = () => {
                   <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
-                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
-                      isSelected
+                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${isSelected
                         ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40 border border-purple-400'
                         : 'bg-[#131520] text-slate-400 border border-[#23273c] hover:bg-[#1a1d2e]'
-                    }`}
+                      }`}
                   >
                     <span>{cat.name}</span>
                   </button>
@@ -317,11 +315,10 @@ export const App: React.FC = () => {
               </span>
               <button
                 onClick={() => setSelectedStyle(null)}
-                className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
-                  selectedStyle === null
+                className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${selectedStyle === null
                     ? 'bg-[#1d2033] text-purple-300 border border-purple-700/60'
                     : 'text-slate-500 hover:text-slate-300'
-                }`}
+                  }`}
               >
                 Todos os Estilos
               </button>
@@ -331,11 +328,10 @@ export const App: React.FC = () => {
                   <button
                     key={style}
                     onClick={() => setSelectedStyle(isSelected ? null : style)}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-                      isSelected
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${isSelected
                         ? 'bg-cyan-600 text-white border border-cyan-400 shadow-md shadow-cyan-950/40'
                         : 'bg-[#131520] text-slate-400 border border-[#23273c] hover:text-white'
-                    }`}
+                      }`}
                   >
                     {style}
                   </button>
@@ -390,143 +386,141 @@ export const App: React.FC = () => {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
-                {filteredPrompts.map((prompt) => {
-                  const cat = categories.find((c) => c.id === prompt.category_id);
-                  return (
-                    <PromptCard
-                      key={prompt.id}
-                      prompt={prompt}
-                      categoryName={cat?.name}
-                      isAdmin={isAdmin}
-                      onOpenDetails={(p) => setActivePromptDetails(p)}
-                      onEditPrompt={(p) => {
-                        setEditingPrompt(p);
-                        setIsCreateOpen(true);
-                      }}
-                      onDeletePrompt={(id) =>
-                        setDeletePromptModal({
-                          isOpen: true,
-                          id,
-                          title: prompt.title,
-                        })
-                      }
-                    />
-                  );
-                })}
-              </div>
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-4 lg:gap-5">
+                  {filteredPrompts.map((prompt) => {
+                    const cat = categories.find((c) => c.id === prompt.category_id);
+                    return (
+                      <PromptCard
+                        key={prompt.id}
+                        prompt={prompt}
+                        categoryName={cat?.name}
+                        isAdmin={isAdmin}
+                        onOpenDetails={(p) => setActivePromptDetails(p)}
+                        onEditPrompt={(p) => {
+                          setEditingPrompt(p);
+                          setIsCreateOpen(true);
+                        }}
+                        onDeletePrompt={(id) =>
+                          setDeletePromptModal({
+                            isOpen: true,
+                            id,
+                            title: prompt.title,
+                          })
+                        }
+                      />
+                    );
+                  })}
+                </div>
             )}
-          </main>
+              </main>
         </>
       )}
 
-      {/* 6. Barra Mobile com Acesso à Área Admin exclusivo para o Admin */}
-      <nav className="sm:hidden sticky bottom-0 z-40 bg-[#0c0d12]/95 backdrop-blur-md border-t border-[#1b1e2c] px-6 py-2.5 flex items-center justify-between text-[11px] text-slate-400">
-        <button
-          onClick={() => {
-            setCurrentView('library');
-            setSelectedCategory(null);
-            setSearchQuery('');
-          }}
-          className={`flex flex-col items-center gap-1 font-medium transition-colors ${
-            currentView === 'library' ? 'text-purple-400' : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          <Layers className="w-4 h-4" />
-          <span>Biblioteca</span>
-        </button>
+          {/* 6. Barra Mobile com Acesso à Área Admin exclusivo para o Admin */}
+          <nav className="sm:hidden sticky bottom-0 z-40 bg-[#0c0d12]/95 backdrop-blur-md border-t border-[#1b1e2c] px-6 py-2.5 flex items-center justify-between text-[11px] text-slate-400">
+            <button
+              onClick={() => {
+                setCurrentView('library');
+                setSelectedCategory(null);
+                setSearchQuery('');
+              }}
+              className={`flex flex-col items-center gap-1 font-medium transition-colors ${currentView === 'library' ? 'text-purple-400' : 'text-slate-400 hover:text-white'
+                }`}
+            >
+              <Layers className="w-4 h-4" />
+              <span>Biblioteca</span>
+            </button>
 
-        {isAdmin && (
-          <button
-            onClick={() => setCurrentView(currentView === 'admin' ? 'library' : 'admin')}
-            className={`flex flex-col items-center gap-1 font-medium transition-colors ${
-              currentView === 'admin' ? 'text-purple-400' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <Shield className="w-4 h-4" />
-            <span>Admin</span>
-          </button>
-        )}
+            {isAdmin && (
+              <button
+                onClick={() => setCurrentView(currentView === 'admin' ? 'library' : 'admin')}
+                className={`flex flex-col items-center gap-1 font-medium transition-colors ${currentView === 'admin' ? 'text-purple-400' : 'text-slate-400 hover:text-white'
+                  }`}
+              >
+                <Shield className="w-4 h-4" />
+                <span>Admin</span>
+              </button>
+            )}
 
-        {isAdmin && (
-          <button
-            onClick={() => {
-              setEditingPrompt(null);
-              setIsCreateOpen(true);
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  setEditingPrompt(null);
+                  setIsCreateOpen(true);
+                }}
+                className="flex flex-col items-center gap-1 text-slate-400 hover:text-white"
+              >
+                <div className="w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center text-white -mt-3 shadow-lg shadow-purple-900/60 border-2 border-[#0c0d12]">
+                  <Plus className="w-4 h-4" />
+                </div>
+                <span>Novo</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => setShowLogoutModal(true)}
+              className="flex flex-col items-center gap-1 text-slate-400 hover:text-rose-400"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Sair</span>
+            </button>
+          </nav>
+
+          {/* Modais */}
+          {activePromptDetails && (
+            <PromptDetailsModal
+              prompt={activePromptDetails}
+              categoryName={
+                categories.find((c) => c.id === activePromptDetails.category_id)?.name
+              }
+              onClose={() => setActivePromptDetails(null)}
+            />
+          )}
+
+          {isCreateOpen && (
+            <CreatePromptModal
+              categories={categories}
+              promptToEdit={editingPrompt}
+              onClose={() => {
+                setIsCreateOpen(false);
+                setEditingPrompt(null);
+              }}
+              onSuccess={() => {
+                setIsCreateOpen(false);
+                setEditingPrompt(null);
+                loadData();
+              }}
+            />
+          )}
+
+          {/* Modal de Confirmação de Logout */}
+          <ConfirmActionModal
+            isOpen={showLogoutModal}
+            title="Encerrar Sessão"
+            description="Tem certeza que deseja sair da sua conta na plataforma PromptHub?"
+            actionType="logout"
+            confirmLabel="Sair da Conta"
+            cancelLabel="Permanecer"
+            onConfirm={async () => {
+              setShowLogoutModal(false);
+              await signOut();
             }}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-white"
-          >
-            <div className="w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center text-white -mt-3 shadow-lg shadow-purple-900/60 border-2 border-[#0c0d12]">
-              <Plus className="w-4 h-4" />
-            </div>
-            <span>Novo</span>
-          </button>
-        )}
+            onClose={() => setShowLogoutModal(false)}
+          />
 
-        <button
-          onClick={() => setShowLogoutModal(true)}
-          className="flex flex-col items-center gap-1 text-slate-400 hover:text-rose-400"
-        >
-          <LogOut className="w-4 h-4" />
-          <span>Sair</span>
-        </button>
-      </nav>
-
-      {/* Modais */}
-      {activePromptDetails && (
-        <PromptDetailsModal
-          prompt={activePromptDetails}
-          categoryName={
-            categories.find((c) => c.id === activePromptDetails.category_id)?.name
-          }
-          onClose={() => setActivePromptDetails(null)}
-        />
-      )}
-
-      {isCreateOpen && (
-        <CreatePromptModal
-          categories={categories}
-          promptToEdit={editingPrompt}
-          onClose={() => {
-            setIsCreateOpen(false);
-            setEditingPrompt(null);
-          }}
-          onSuccess={() => {
-            setIsCreateOpen(false);
-            setEditingPrompt(null);
-            loadData();
-          }}
-        />
-      )}
-
-      {/* Modal de Confirmação de Logout */}
-      <ConfirmActionModal
-        isOpen={showLogoutModal}
-        title="Encerrar Sessão"
-        description="Tem certeza que deseja sair da sua conta na plataforma PromptHub?"
-        actionType="logout"
-        confirmLabel="Sair da Conta"
-        cancelLabel="Permanecer"
-        onConfirm={async () => {
-          setShowLogoutModal(false);
-          await signOut();
-        }}
-        onClose={() => setShowLogoutModal(false)}
-      />
-
-      {/* Modal de Confirmação de Exclusão de Prompt na Biblioteca */}
-      <ConfirmActionModal
-        isOpen={deletePromptModal.isOpen}
-        title="Excluir Prompt"
-        description={`Tem certeza que deseja excluir o prompt "${deletePromptModal.title}"? Esta ação é definitiva e removerá o item do Supabase.`}
-        actionType="delete"
-        confirmLabel="Excluir Definitivamente"
-        cancelLabel="Cancelar"
-        onConfirm={() => handleDeletePrompt(deletePromptModal.id)}
-        onClose={() => setDeletePromptModal({ isOpen: false, id: '', title: '' })}
-      />
-    </div>
-  );
+          {/* Modal de Confirmação de Exclusão de Prompt na Biblioteca */}
+          <ConfirmActionModal
+            isOpen={deletePromptModal.isOpen}
+            title="Excluir Prompt"
+            description={`Tem certeza que deseja excluir o prompt "${deletePromptModal.title}"? Esta ação é definitiva e removerá o item do Supabase.`}
+            actionType="delete"
+            confirmLabel="Excluir Definitivamente"
+            cancelLabel="Cancelar"
+            onConfirm={() => handleDeletePrompt(deletePromptModal.id)}
+            onClose={() => setDeletePromptModal({ isOpen: false, id: '', title: '' })}
+          />
+        </div>
+      );
 };
 
-export default App;
+      export default App;
