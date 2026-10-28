@@ -18,7 +18,7 @@ import { PromptCard } from './components/PromptCard';
 import { PromptDetailsModal } from './components/PromptDetailsModal';
 import { CreatePromptModal } from './components/CreatePromptModal';
 import { LoginModal } from './components/LoginModal';
-import { AdminUsersModal } from './components/AdminUsersModal';
+import { AdminDashboardView } from './components/AdminDashboardView';
 import { categoriesService, promptsService } from './services/promptService';
 import type { Database } from './types/database.types';
 
@@ -35,11 +35,21 @@ export const App: React.FC = () => {
   const [sortBy, setSortBy] = useState<'created_at' | 'title'>('created_at');
   const [loading, setLoading] = useState(false);
 
-  // Modais
+  // Modais e Telas
+  const [currentView, setCurrentView] = useState<'library' | 'admin'>('library');
   const [activePromptDetails, setActivePromptDetails] = useState<PromptItem | null>(null);
+  const [editingPrompt, setEditingPrompt] = useState<PromptItem | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [isAdminUsersOpen, setIsAdminUsersOpen] = useState(false);
+
+  const handleDeletePrompt = async (promptId: string) => {
+    try {
+      await promptsService.deletePrompt(promptId);
+      setPrompts((prev) => prev.filter((p) => p.id !== promptId));
+    } catch (err: any) {
+      alert(err.message || 'Erro ao excluir prompt.');
+    }
+  };
 
   // Carregar dados reais apenas se autenticado e aprovado
   const loadData = async () => {
@@ -138,8 +148,8 @@ export const App: React.FC = () => {
     );
   }
 
-  // Se a conta tiver sido rejeitada pelo admin
-  if (profile?.status === 'rejected') {
+  // Se a conta tiver sido bloqueada pelo admin
+  if (profile?.status === 'blocked') {
     return (
       <div className="min-h-screen bg-[#0c0d12] text-slate-100 flex flex-col justify-center items-center p-4">
         <div className="max-w-md w-full bg-[#131522] border border-rose-500/30 rounded-3xl p-6 sm:p-8 text-center space-y-5 shadow-2xl">
@@ -148,9 +158,9 @@ export const App: React.FC = () => {
           </div>
 
           <div>
-            <h2 className="text-xl font-bold text-white">Acesso Não Aprovado</h2>
+            <h2 className="text-xl font-bold text-white">Acesso Bloqueado</h2>
             <p className="text-xs text-slate-400 mt-2">
-              A solicitação de acesso para a conta <span className="font-mono text-slate-300">{user.email}</span> foi recusada pela administração da plataforma.
+              A conta associada ao e-mail <span className="font-mono text-slate-300">{user.email}</span> foi bloqueada pela administração e seu acesso está revogado.
             </p>
           </div>
 
@@ -218,22 +228,28 @@ export const App: React.FC = () => {
 
         {/* Ações da Direita */}
         <div className="flex items-center gap-2.5">
-          {/* Painel de Gestão de Usuários (Exclusivo Admin) */}
+          {/* Alternador de Tela (Biblioteca <-> Área Admin) Exclusivo para Admin */}
           {isAdmin && (
             <button
-              onClick={() => setIsAdminUsersOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#181a29] hover:bg-[#20243b] text-purple-300 border border-purple-800/50 font-medium text-xs transition-colors"
-              title="Gerenciar cadastros e aprovações"
+              onClick={() => setCurrentView(currentView === 'library' ? 'admin' : 'library')}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                currentView === 'admin'
+                  ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40'
+                  : 'bg-[#181a29] hover:bg-[#20243b] text-purple-300 border border-purple-800/50'
+              }`}
             >
-              <Users className="w-3.5 h-3.5 text-purple-400" />
-              <span className="hidden md:inline">Aprovações</span>
+              <Shield className="w-3.5 h-3.5" />
+              <span>{currentView === 'admin' ? 'Ver Biblioteca' : 'Painel Admin'}</span>
             </button>
           )}
 
           {/* Botão Novo Prompt (Admin) */}
           {isAdmin && (
             <button
-              onClick={() => setIsCreateOpen(true)}
+              onClick={() => {
+                setEditingPrompt(null);
+                setIsCreateOpen(true);
+              }}
               className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-xs shadow-md shadow-purple-900/40 transition-all"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -282,108 +298,133 @@ export const App: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. Categorias em Pílulas */}
-      <div className="px-4 sm:px-8 pt-4 pb-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
-        <button
-          onClick={() => setSelectedCategory(null)}
-          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
-            selectedCategory === null
-              ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40 border border-purple-400'
-              : 'bg-[#131520] text-slate-400 border border-[#23273c] hover:bg-[#1a1d2e]'
-          }`}
-        >
-          <Layers className="w-3.5 h-3.5" />
-          <span>Todos</span>
-        </button>
-
-        {categories.map((cat) => {
-          const isSelected = selectedCategory === cat.id;
-          return (
+      {/* SE FOR VISÃO DE ADMIN, MOSTRA O DASHBOARD ADMIN */}
+      {currentView === 'admin' && isAdmin ? (
+        <AdminDashboardView
+          onOpenCreatePrompt={() => {
+            setEditingPrompt(null);
+            setIsCreateOpen(true);
+          }}
+          onEditPrompt={(prompt) => {
+            setEditingPrompt(prompt);
+            setIsCreateOpen(true);
+          }}
+        />
+      ) : (
+        <>
+          {/* 3. Categorias em Pílulas */}
+          <div className="px-4 sm:px-8 pt-4 pb-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
             <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
+              onClick={() => setSelectedCategory(null)}
               className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
-                isSelected
+                selectedCategory === null
                   ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40 border border-purple-400'
                   : 'bg-[#131520] text-slate-400 border border-[#23273c] hover:bg-[#1a1d2e]'
               }`}
             >
-              <span>{cat.name}</span>
+              <Layers className="w-3.5 h-3.5" />
+              <span>Todos</span>
             </button>
-          );
-        })}
-      </div>
 
-      {/* 4. Contador de Prompts & Ordenação */}
-      <div className="px-4 sm:px-8 py-3 flex items-center justify-between text-xs text-slate-400 border-b border-[#181a28]">
-        <div className="font-mono text-[11px] uppercase tracking-wider text-slate-400">
-          <span className="font-bold text-slate-200">{filteredPrompts.length}</span> PROMPTS CURADOS
-        </div>
-
-        <div className="flex items-center gap-1.5 text-xs text-slate-300">
-          <span>Ordenar:</span>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
-            className="bg-[#131520] border border-[#23273c] rounded-lg px-2 py-1 text-xs text-white focus:outline-none"
-          >
-            <option value="created_at">Mais recentes</option>
-            <option value="title">Alfabética</option>
-          </select>
-        </div>
-      </div>
-
-      {/* 5. Grade de Prompts (PromptGrid) */}
-      <main className="flex-1 px-4 sm:px-8 py-6">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 text-slate-500">
-            <Loader2 className="w-8 h-8 animate-spin text-purple-500 mb-2" />
-            <p className="text-xs">Carregando acervo de prompts...</p>
-          </div>
-        ) : filteredPrompts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-[#151724] border border-[#24283f] flex items-center justify-center text-slate-400 mb-3">
-              <Search className="w-6 h-6" />
-            </div>
-            <h3 className="text-base font-semibold text-slate-200">Nenhum prompt encontrado</h3>
-            <p className="text-xs text-slate-500 max-w-sm mt-1">
-              Tente redefinir os filtros ou buscar por outras palavras-chave.
-            </p>
-            <button
-              onClick={() => {
-                setSelectedCategory(null);
-                setSearchQuery('');
-              }}
-              className="mt-4 px-4 py-2 rounded-xl bg-purple-600/80 hover:bg-purple-600 text-white text-xs font-medium"
-            >
-              Limpar filtros
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
-            {filteredPrompts.map((prompt) => {
-              const cat = categories.find((c) => c.id === prompt.category_id);
+            {categories.map((cat) => {
+              const isSelected = selectedCategory === cat.id;
               return (
-                <PromptCard
-                  key={prompt.id}
-                  prompt={prompt}
-                  categoryName={cat?.name}
-                  onOpenDetails={(p) => setActivePromptDetails(p)}
-                />
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
+                    isSelected
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40 border border-purple-400'
+                      : 'bg-[#131520] text-slate-400 border border-[#23273c] hover:bg-[#1a1d2e]'
+                  }`}
+                >
+                  <span>{cat.name}</span>
+                </button>
               );
             })}
           </div>
-        )}
-      </main>
 
-      {/* 6. Barra Mobile */}
+          {/* 4. Contador de Prompts & Ordenação */}
+          <div className="px-4 sm:px-8 py-3 flex items-center justify-between text-xs text-slate-400 border-b border-[#181a28]">
+            <div className="font-mono text-[11px] uppercase tracking-wider text-slate-400">
+              <span className="font-bold text-slate-200">{filteredPrompts.length}</span> PROMPTS CURADOS
+            </div>
+
+            <div className="flex items-center gap-1.5 text-xs text-slate-300">
+              <span>Ordenar:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="bg-[#131520] border border-[#23273c] rounded-lg px-2 py-1 text-xs text-white focus:outline-none"
+              >
+                <option value="created_at">Mais recentes</option>
+                <option value="title">Alfabética</option>
+              </select>
+            </div>
+          </div>
+
+          {/* 5. Grade de Prompts (PromptGrid) */}
+          <main className="flex-1 px-4 sm:px-8 py-6">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+                <Loader2 className="w-8 h-8 animate-spin text-purple-500 mb-2" />
+                <p className="text-xs">Carregando acervo de prompts...</p>
+              </div>
+            ) : filteredPrompts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="w-12 h-12 rounded-2xl bg-[#151724] border border-[#24283f] flex items-center justify-center text-slate-400 mb-3">
+                  <Search className="w-6 h-6" />
+                </div>
+                <h3 className="text-base font-semibold text-slate-200">Nenhum prompt encontrado</h3>
+                <p className="text-xs text-slate-500 max-w-sm mt-1">
+                  Tente redefinir os filtros ou buscar por outras palavras-chave.
+                </p>
+                <button
+                  onClick={() => {
+                    setSelectedCategory(null);
+                    setSearchQuery('');
+                  }}
+                  className="mt-4 px-4 py-2 rounded-xl bg-purple-600/80 hover:bg-purple-600 text-white text-xs font-medium"
+                >
+                  Limpar filtros
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+                {filteredPrompts.map((prompt) => {
+                  const cat = categories.find((c) => c.id === prompt.category_id);
+                  return (
+                    <PromptCard
+                      key={prompt.id}
+                      prompt={prompt}
+                      categoryName={cat?.name}
+                      isAdmin={isAdmin}
+                      onOpenDetails={(p) => setActivePromptDetails(p)}
+                      onEditPrompt={(p) => {
+                        setEditingPrompt(p);
+                        setIsCreateOpen(true);
+                      }}
+                      onDeletePrompt={(id) => handleDeletePrompt(id)}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </main>
+        </>
+      )}
+
+      {/* 6. Barra Mobile com Acesso à Área Admin exclusivo para o Admin */}
       <nav className="sm:hidden sticky bottom-0 z-40 bg-[#0c0d12]/95 backdrop-blur-md border-t border-[#1b1e2c] px-6 py-2.5 flex items-center justify-between text-[11px] text-slate-400">
         <button
           onClick={() => {
+            setCurrentView('library');
             setSelectedCategory(null);
             setSearchQuery('');
           }}
-          className="flex flex-col items-center gap-1 text-purple-400 font-medium"
+          className={`flex flex-col items-center gap-1 font-medium transition-colors ${
+            currentView === 'library' ? 'text-purple-400' : 'text-slate-400 hover:text-white'
+          }`}
         >
           <Layers className="w-4 h-4" />
           <span>Biblioteca</span>
@@ -391,7 +432,22 @@ export const App: React.FC = () => {
 
         {isAdmin && (
           <button
-            onClick={() => setIsCreateOpen(true)}
+            onClick={() => setCurrentView(currentView === 'admin' ? 'library' : 'admin')}
+            className={`flex flex-col items-center gap-1 font-medium transition-colors ${
+              currentView === 'admin' ? 'text-purple-400' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Shield className="w-4 h-4" />
+            <span>Admin</span>
+          </button>
+        )}
+
+        {isAdmin && (
+          <button
+            onClick={() => {
+              setEditingPrompt(null);
+              setIsCreateOpen(true);
+            }}
             className="flex flex-col items-center gap-1 text-slate-400 hover:text-white"
           >
             <div className="w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center text-white -mt-3 shadow-lg shadow-purple-900/60 border-2 border-[#0c0d12]">
@@ -424,18 +480,18 @@ export const App: React.FC = () => {
       {isCreateOpen && (
         <CreatePromptModal
           categories={categories}
-          onClose={() => setIsCreateOpen(false)}
+          promptToEdit={editingPrompt}
+          onClose={() => {
+            setIsCreateOpen(false);
+            setEditingPrompt(null);
+          }}
           onSuccess={() => {
             setIsCreateOpen(false);
+            setEditingPrompt(null);
             loadData();
           }}
         />
       )}
-
-      <AdminUsersModal
-        isOpen={isAdminUsersOpen}
-        onClose={() => setIsAdminUsersOpen(false)}
-      />
     </div>
   );
 };

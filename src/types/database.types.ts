@@ -7,7 +7,7 @@ export type Json =
   | Json[];
 
 export type AppRole = 'user' | 'admin';
-export type UserStatus = 'pending' | 'approved' | 'rejected';
+export type UserStatus = 'pending' | 'approved' | 'blocked';
 export type MediaType = 'none' | 'image' | 'gif' | 'video';
 
 export interface Database {
@@ -130,6 +130,19 @@ export interface Database {
       is_approved: {
         Args: Record<PropertyKey, never>;
         Returns: boolean;
+      };
+      admin_delete_user: {
+        Args: {
+          target_user_id: string;
+        };
+        Returns: void;
+      };
+      admin_set_user_status: {
+        Args: {
+          target_user_id: string;
+          new_status: UserStatus;
+        };
+        Returns: void;
       };
       search_prompts: {
         Args: {

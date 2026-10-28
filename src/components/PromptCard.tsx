@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bookmark, Sparkles, CheckCircle2, Video, Code, Image as ImageIcon } from 'lucide-react';
+import { Bookmark, Sparkles, CheckCircle2, Image as ImageIcon, Edit3, Trash2 } from 'lucide-react';
 import type { Database } from '../types/database.types';
 import { CopyPromptButton } from './CopyPromptButton';
 
@@ -8,22 +8,25 @@ type PromptItem = Database['public']['Tables']['prompts']['Row'];
 interface PromptCardProps {
   prompt: PromptItem;
   categoryName?: string;
+  isAdmin?: boolean;
   onOpenDetails: (prompt: PromptItem) => void;
-  onSelectTag?: (tag: string) => void;
+  onEditPrompt?: (prompt: PromptItem) => void;
+  onDeletePrompt?: (promptId: string) => void;
 }
 
 export const PromptCard: React.FC<PromptCardProps> = ({
   prompt,
   categoryName,
+  isAdmin = false,
   onOpenDetails,
-  onSelectTag,
+  onEditPrompt,
+  onDeletePrompt,
 }) => {
   const [bookmarked, setBookmarked] = useState(false);
   const [mediaError, setMediaError] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
-  // Renderizar o preview de variáveis {{var}} destacadas com estilo roxo/pílula como na imagem
   const renderHighlightedContent = (text: string) => {
-    // Quebra por variáveis {{...}} ou [TEMA]
     const parts = text.split(/(\{\{[^}]+\}\}|\[[A-Z0-9_ -]+\])/g);
     return parts.slice(0, 15).map((part, index) => {
       if (/^(\{\{[^}]+\}\}|\[[A-Z0-9_ -]+\])$/.test(part)) {
@@ -46,7 +49,7 @@ export const PromptCard: React.FC<PromptCardProps> = ({
       className="group relative bg-[#13151f] hover:bg-[#171926] border border-[#23263b] hover:border-purple-500/40 rounded-2xl p-4 transition-all duration-300 flex flex-col justify-between cursor-pointer shadow-lg hover:shadow-purple-950/20"
     >
       <div>
-        {/* Cabeçalho do Card: Categorias / Badges & Salvar */}
+        {/* Cabeçalho do Card: Categorias & Ações de Admin */}
         <div className="flex items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-1.5 flex-wrap">
             {categoryName && (
@@ -54,30 +57,83 @@ export const PromptCard: React.FC<PromptCardProps> = ({
                 {categoryName}
               </span>
             )}
-            {/* Modelo de IA ou Badge de Modelo */}
             {prompt.tags && prompt.tags.length > 0 && (
               <span className="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-purple-950/60 text-purple-300 border border-purple-800/50">
                 {prompt.tags[0]}
               </span>
             )}
+            {!prompt.is_published && (
+              <span className="px-2 py-0.5 rounded text-[10px] bg-amber-950/80 text-amber-300 border border-amber-700">
+                Rascunho
+              </span>
+            )}
           </div>
 
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setBookmarked(!bookmarked);
-            }}
-            title="Salvar nos favoritos"
-            className="p-1 rounded-lg text-slate-400 hover:text-white transition-colors"
-          >
-            <Bookmark
-              className={`w-4 h-4 ${bookmarked ? 'fill-purple-500 text-purple-500' : ''}`}
-            />
-          </button>
+          <div className="flex items-center gap-1">
+            {/* Ações de Edição / Exclusão para Administrador */}
+            {isAdmin && (
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditPrompt?.(prompt);
+                  }}
+                  title="Editar prompt"
+                  className="p-1 rounded-lg text-slate-400 hover:text-purple-300 hover:bg-white/5 transition-colors"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                </button>
+                {confirmDelete ? (
+                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => onDeletePrompt?.(prompt.id)}
+                      className="px-1.5 py-0.5 rounded text-[10px] bg-rose-600 text-white font-bold"
+                    >
+                      Excluir
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete(false)}
+                      className="text-slate-400 text-[10px]"
+                    >
+                      X
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConfirmDelete(true);
+                    }}
+                    title="Excluir prompt do banco"
+                    className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-white/5 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </>
+            )}
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setBookmarked(!bookmarked);
+              }}
+              title="Salvar nos favoritos"
+              className="p-1 rounded-lg text-slate-400 hover:text-white transition-colors"
+            >
+              <Bookmark
+                className={`w-4 h-4 ${bookmarked ? 'fill-purple-500 text-purple-500' : ''}`}
+              />
+            </button>
+          </div>
         </div>
 
-        {/* Mídia demonstrativa se houver */}
+        {/* Mídia */}
         {prompt.media_url && !mediaError && (
           <div className="relative w-full h-44 rounded-xl overflow-hidden mb-3 bg-[#0c0d12] border border-[#23263b]">
             {prompt.media_type === 'video' ? (
@@ -111,14 +167,14 @@ export const PromptCard: React.FC<PromptCardProps> = ({
           {prompt.title}
         </h3>
 
-        {/* Descrição se houver */}
+        {/* Descrição */}
         {prompt.description && (
           <p className="text-xs text-slate-400 line-clamp-2 mb-3">
             {prompt.description}
           </p>
         )}
 
-        {/* Caixa de Código / Prompt com Variáveis destacadas */}
+        {/* Código do Prompt */}
         <div className="p-3 rounded-xl bg-[#0b0c12] border border-[#1e202e] text-slate-300 font-mono text-xs leading-relaxed max-h-24 overflow-hidden relative">
           <div className="line-clamp-3">
             {renderHighlightedContent(prompt.content)}
@@ -127,7 +183,7 @@ export const PromptCard: React.FC<PromptCardProps> = ({
         </div>
       </div>
 
-      {/* Rodapé do Card: Tags, estatísticas e Botão de Cópia */}
+      {/* Rodapé */}
       <div className="mt-4 pt-3 border-t border-[#1e2133] flex items-center justify-between gap-2">
         <div className="flex items-center gap-3 text-xs text-slate-400">
           <span className="flex items-center gap-1">
@@ -140,14 +196,11 @@ export const PromptCard: React.FC<PromptCardProps> = ({
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <CopyPromptButton
-            content={prompt.content}
-            variant="compact"
-          />
-        </div>
+        <CopyPromptButton
+          content={prompt.content}
+          variant="compact"
+        />
       </div>
     </div>
   );
 };
-
