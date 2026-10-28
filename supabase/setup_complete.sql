@@ -143,15 +143,23 @@ CREATE TRIGGER on_auth_user_created
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_new_user();
 
--- 6. TABELA CATEGORIES (Preserva se já existir)
+-- 6. TABELA CATEGORIES E SUBCATEGORIAS (COM parent_id)
 CREATE TABLE IF NOT EXISTS public.categories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     slug TEXT NOT NULL UNIQUE,
     description TEXT,
+    parent_id UUID REFERENCES public.categories(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='categories' AND column_name='parent_id') THEN
+        ALTER TABLE public.categories ADD COLUMN parent_id UUID REFERENCES public.categories(id) ON DELETE CASCADE;
+    END IF;
+END$$;
 
 DROP TRIGGER IF EXISTS set_categories_updated_at ON public.categories;
 CREATE TRIGGER set_categories_updated_at
@@ -440,7 +448,7 @@ BEGIN
 END;
 $$;
 
--- 14. SEED SEGURO: Insere dados iniciais apenas se a tabela estiver vazia
+-- 14. SEED SEGURO: Apenas as categorias 'Imagens' e 'Vídeos'
 INSERT INTO public.categories (id, name, slug, description)
 SELECT 
     '11111111-1111-1111-1111-111111111111', 'Imagens', 'imagens', 'Prompts para Midjourney, DALL-E, Stable Diffusion e Flux'
@@ -448,18 +456,11 @@ WHERE NOT EXISTS (SELECT 1 FROM public.categories WHERE slug = 'imagens');
 
 INSERT INTO public.categories (id, name, slug, description)
 SELECT 
-    '22222222-2222-2222-2222-222222222222', 'Marketing', 'marketing', 'Copywriting, landing pages, emails e anúncios de alta conversão'
-WHERE NOT EXISTS (SELECT 1 FROM public.categories WHERE slug = 'marketing');
-
-INSERT INTO public.categories (id, name, slug, description)
-SELECT 
-    '33333333-3333-3333-3333-333333333333', 'Programação', 'programacao', 'Arquitetura de software, refatoração, testes e otimização'
-WHERE NOT EXISTS (SELECT 1 FROM public.categories WHERE slug = 'programacao');
-
-INSERT INTO public.categories (id, name, slug, description)
-SELECT 
     '44444444-4444-4444-4444-444444444444', 'Vídeos', 'videos', 'Prompts cinematográficos para Sora, Runway Gen-3, Luma e Pika'
 WHERE NOT EXISTS (SELECT 1 FROM public.categories WHERE slug = 'videos');
+
+-- Remover com segurança categorias excedentes se existirem
+DELETE FROM public.categories WHERE slug NOT IN ('imagens', 'videos');
 
 -- Prompts iniciais: insere apenas se não existirem
 INSERT INTO public.prompts (title, slug, description, content, category_id, tags, media_url, media_type, is_published)
@@ -514,7 +515,7 @@ SELECT
     true
 WHERE NOT EXISTS (SELECT 1 FROM public.prompts WHERE slug = 'video-promocional-produto');
 
--- 14. SEED SEGURO: Insere dados iniciais apenas se a tabela estiver vazia
+-- 14. SEED SEGURO: Apenas as categorias 'Imagens' e 'Vídeos'
 INSERT INTO public.categories (id, name, slug, description)
 SELECT 
     '11111111-1111-1111-1111-111111111111', 'Imagens', 'imagens', 'Prompts para Midjourney, DALL-E, Stable Diffusion e Flux'
@@ -522,18 +523,11 @@ WHERE NOT EXISTS (SELECT 1 FROM public.categories WHERE slug = 'imagens');
 
 INSERT INTO public.categories (id, name, slug, description)
 SELECT 
-    '22222222-2222-2222-2222-222222222222', 'Marketing', 'marketing', 'Copywriting, landing pages, emails e anúncios de alta conversão'
-WHERE NOT EXISTS (SELECT 1 FROM public.categories WHERE slug = 'marketing');
-
-INSERT INTO public.categories (id, name, slug, description)
-SELECT 
-    '33333333-3333-3333-3333-333333333333', 'Programação', 'programacao', 'Arquitetura de software, refatoração, testes e otimização'
-WHERE NOT EXISTS (SELECT 1 FROM public.categories WHERE slug = 'programacao');
-
-INSERT INTO public.categories (id, name, slug, description)
-SELECT 
     '44444444-4444-4444-4444-444444444444', 'Vídeos', 'videos', 'Prompts cinematográficos para Sora, Runway Gen-3, Luma e Pika'
 WHERE NOT EXISTS (SELECT 1 FROM public.categories WHERE slug = 'videos');
+
+-- Remover com segurança categorias excedentes se existirem
+DELETE FROM public.categories WHERE slug NOT IN ('imagens', 'videos');
 
 -- Prompts iniciais: insere apenas se não existirem
 INSERT INTO public.prompts (title, slug, description, content, category_id, tags, media_url, media_type, is_published)

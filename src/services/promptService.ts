@@ -56,12 +56,24 @@ export const categoriesService = {
     return (data as CategoryRow[]) || [];
   },
 
-  async createCategory(category: { name: string; slug: string; description?: string }) {
+  async createCategory(category: { name: string; slug: string; description?: string; parent_id?: string | null }) {
     const { data, error } = await (supabase
       .from('categories')
       .insert(category as any)
       .select()
       .single() as any);
+
+    if (error) throw error;
+    return data;
+  },
+
+  async updateCategory(id: string, updates: { name?: string; slug?: string; description?: string; parent_id?: string | null }) {
+    const { data, error } = await ((supabase
+      .from('categories') as any)
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single());
 
     if (error) throw error;
     return data;

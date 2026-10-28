@@ -48,10 +48,13 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   const [confirmDeleteUserId, setConfirmDeleteUserId] = useState<string | null>(null);
   const [confirmDeletePromptId, setConfirmDeletePromptId] = useState<string | null>(null);
 
-  // Form nova categoria
-  const [newCatName, setNewCatName] = useState('');
-  const [newCatSlug, setNewCatSlug] = useState('');
+  // Form categoria / subcategoria
+  const [editingCategory, setEditingCategory] = useState<CategoryItem | null>(null);
+  const [catName, setCatName] = useState('');
+  const [catSlug, setCatSlug] = useState('');
+  const [catParentId, setCatParentId] = useState<string>('');
   const [catLoading, setCatLoading] = useState(false);
+  const [confirmDeleteCatId, setConfirmDeleteCatId] = useState<string | null>(null);
 
   const loadAllAdminData = async () => {
     try {
@@ -149,26 +152,63 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
     }
   };
 
-  // Criar Categoria
-  const handleCreateCategory = async (e: React.FormEvent) => {
+  // Salvar (Criar ou Editar) Categoria/Subcategoria
+  const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCatName.trim() || !newCatSlug.trim()) return;
+    if (!catName.trim() || !catSlug.trim()) return;
 
     try {
       setCatLoading(true);
-      const created = await categoriesService.createCategory({
-        name: newCatName.trim(),
-        slug: newCatSlug.trim().toLowerCase(),
-      });
-      setCategories((prev) => [...prev, created]);
-      setNewCatName('');
-      setNewCatSlug('');
-      setMsg({ type: 'success', text: 'Categoria criada com sucesso!' });
+      setMsg(null);
+
+      const payload = {
+        name: catName.trim(),
+        slug: catSlug.trim().toLowerCase(),
+        parent_id: catParentId ? catParentId : null,
+      };
+
+      if (editingCategory) {
+        const updated = await categoriesService.updateCategory(editingCategory.id, payload);
+        setCategories((prev) => prev.map((c) => (c.id === editingCategory.id ? updated : c)));
+        setMsg({ type: 'success', text: 'Categoria atualizada com sucesso!' });
+      } else {
+        const created = await categoriesService.createCategory(payload);
+        setCategories((prev) => [...prev, created]);
+        setMsg({ type: 'success', text: 'Categoria/Subcategoria criada com sucesso!' });
+      }
+
+      setEditingCategory(null);
+      setCatName('');
+      setCatSlug('');
+      setCatParentId('');
     } catch (err: any) {
-      setMsg({ type: 'error', text: err.message || 'Erro ao criar categoria.' });
+      setMsg({ type: 'error', text: err.message || 'Erro ao salvar categoria.' });
     } finally {
       setCatLoading(false);
     }
+  };
+
+  // Excluir Categoria/Subcategoria
+  const handleDeleteCategory = async (catId: string) => {
+    try {
+      setActionLoading(catId);
+      setMsg(null);
+      await categoriesService.deleteCategory(catId);
+      setCategories((prev) => prev.filter((c) => c.id !== catId && c.parent_id !== catId));
+      setConfirmDeleteCatId(null);
+      setMsg({ type: 'success', text: 'Categoria removida com sucesso!' });
+    } catch (err: any) {
+      setMsg({ type: 'error', text: err.message || 'Erro ao excluir categoria.' });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleStartEditCat = (cat: CategoryItem) => {
+    setEditingCategory(cat);
+    setCatName(cat.name);
+    setCatSlug(cat.slug);
+    setCatParentId(cat.parent_id || '');
   };
 
   // Contadores
@@ -527,27 +567,62 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
         </div>
       )}
 
-      {/* CONTEÚDO DA ABA: CATEGORIAS */}
+      {/* CONTEÚDO DA ABA: CATEGORIAS E SUBCATEGORIAS */}
       {activeTab === 'categories' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Formulário Nova Categoria */}
+          {/* Formulário: Criar ou Editar Categoria / Subcategoria */}
           <div className="p-5 rounded-2xl bg-[#131522] border border-[#22263d] space-y-4 h-fit">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <FolderPlus className="w-4 h-4 text-purple-400" />
-              <span>Nova Categoria</span>
-            </h3>
-            <form onSubmit={handleCreateCategory} className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <FolderPlus className="w-4 h-4 text-purple-400" />
+                <span>{editingCategory ? 'Editar Categoria' : 'Nova Categoria / Subcategoria'}</span>
+              </h3>
+              {editingCategory && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingCategory(null);
+                    setCatName('');
+                    setCatSlug('');
+                    setCatParentId('');
+                  }}
+                  className="text-xs text-slate-400 hover:text-white underline"
+                >
+                  Cancelar
+                </button>
+              )}
+            </div>
+
+            <form onSubmit={handleSaveCategory} className="space-y-3">
               <div className="space-y-1">
-                <label className="text-xs text-slate-300">Nome da Categoria</label>
+                <label className="text-xs text-slate-300">Tipo de Estrutura</label>
+                <select
+                  value={catParentId}
+                  onChange={(e) => setCatParentId(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl bg-[#171a2a] border border-[#252a42] text-xs text-white focus:outline-none focus:border-purple-500"
+                >
+                  <option value="">Categoria Principal</option>
+                  {categories
+                    .filter((c) => !c.parent_id && (!editingCategory || c.id !== editingCategory.id))
+                    .map((c) => (
+                      <option key={c.id} value={c.id}>
+                        Subcategoria de: {c.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-slate-300">Nome</label>
                 <input
                   type="text"
                   required
-                  placeholder="Ex: Áudio & Voz"
-                  value={newCatName}
+                  placeholder="Ex: UGC, POV, Imagens, Vídeos"
+                  value={catName}
                   onChange={(e) => {
-                    setNewCatName(e.target.value);
-                    if (!newCatSlug) {
-                      setNewCatSlug(
+                    setCatName(e.target.value);
+                    if (!editingCategory) {
+                      setCatSlug(
                         e.target.value
                           .toLowerCase()
                           .normalize('NFD')
@@ -565,9 +640,9 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                 <input
                   type="text"
                   required
-                  placeholder="audio-e-voz"
-                  value={newCatSlug}
-                  onChange={(e) => setNewCatSlug(e.target.value)}
+                  placeholder="ex: ugc ou pov"
+                  value={catSlug}
+                  onChange={(e) => setCatSlug(e.target.value)}
                   className="w-full px-3.5 py-2 rounded-xl bg-[#171a2a] border border-[#252a42] text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-purple-500 font-mono"
                 />
               </div>
@@ -578,28 +653,115 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                 className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold transition-all flex items-center justify-center gap-2 shadow-md shadow-purple-900/30"
               >
                 {catLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                <span>Adicionar Categoria</span>
+                <span>{editingCategory ? 'Atualizar Categoria' : 'Salvar Categoria'}</span>
               </button>
             </form>
           </div>
 
-          {/* Lista de Categorias */}
-          <div className="md:col-span-2 space-y-2">
-            <h3 className="text-sm font-bold text-white mb-2">Categorias Cadastradas</h3>
-            {categories.map((c) => (
-              <div
-                key={c.id}
-                className="p-3.5 rounded-2xl bg-[#131522] border border-[#22263d] flex items-center justify-between"
-              >
-                <div>
-                  <h4 className="text-xs font-semibold text-white">{c.name}</h4>
-                  <p className="text-[11px] font-mono text-purple-300">slug: {c.slug}</p>
+          {/* Lista com Hierarquia (Categorias e suas Subcategorias) */}
+          <div className="md:col-span-2 space-y-3">
+            <h3 className="text-sm font-bold text-white mb-2">Estrutura Atual de Categorias</h3>
+
+            {categories.filter((c) => !c.parent_id).map((parent) => {
+              const subcats = categories.filter((c) => c.parent_id === parent.id);
+              const linkedPrompts = prompts.filter((p) => p.category_id === parent.id).length;
+
+              return (
+                <div key={parent.id} className="p-4 rounded-2xl bg-[#131522] border border-[#22263d] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-white">{parent.name}</span>
+                        <span className="text-[10px] font-mono text-purple-300 bg-purple-950/60 border border-purple-800/40 px-1.5 py-0.5 rounded">
+                          slug: {parent.slug}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-500">{linkedPrompts} prompts vinculados</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleStartEditCat(parent)}
+                        className="p-1.5 rounded-lg bg-[#1a1c2d] hover:bg-[#242842] text-slate-300 hover:text-white"
+                        title="Editar"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+
+                      {confirmDeleteCatId === parent.id ? (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleDeleteCategory(parent.id)}
+                            className="px-2 py-1 rounded bg-rose-600 text-white text-[10px] font-bold"
+                          >
+                            Excluir
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteCatId(null)}
+                            className="text-slate-400 text-[10px]"
+                          >
+                            X
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDeleteCatId(parent.id)}
+                          className="p-1.5 rounded-lg hover:bg-rose-500/20 text-slate-500 hover:text-rose-400"
+                          title="Excluir categoria"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Subcategorias vinculadas */}
+                  <div className="pl-4 pt-2 border-l-2 border-purple-900/40 space-y-1.5">
+                    {subcats.length === 0 ? (
+                      <p className="text-[11px] text-slate-500 italic">Nenhuma subcategoria cadastrada para {parent.name}.</p>
+                    ) : (
+                      subcats.map((sub) => (
+                        <div
+                          key={sub.id}
+                          className="p-2 rounded-xl bg-[#171a2a] border border-[#242940] flex items-center justify-between"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-slate-200">{sub.name}</span>
+                            <span className="text-[10px] font-mono text-cyan-300">slug: {sub.slug}</span>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleStartEditCat(sub)}
+                              className="p-1 text-slate-400 hover:text-white"
+                              title="Editar subcategoria"
+                            >
+                              <Edit3 className="w-3 h-3" />
+                            </button>
+                            {confirmDeleteCatId === sub.id ? (
+                              <button
+                                onClick={() => handleDeleteCategory(sub.id)}
+                                className="px-1.5 py-0.5 rounded bg-rose-600 text-white text-[10px] font-bold"
+                              >
+                                Sim
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => setConfirmDeleteCatId(sub.id)}
+                                className="p-1 text-slate-500 hover:text-rose-400"
+                                title="Excluir subcategoria"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
-                <span className="text-[11px] text-slate-500">
-                  {prompts.filter((p) => p.category_id === c.id).length} prompts vinculados
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

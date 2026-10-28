@@ -33,8 +33,13 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
   const [description, setDescription] = useState(promptToEdit?.description || '');
   const [content, setContent] = useState(promptToEdit?.content || '');
   const [categoryId, setCategoryId] = useState(promptToEdit?.category_id || categories[0]?.id || '');
+  const [styleSubcategory, setStyleSubcategory] = useState<'UGC' | 'POV' | null>(
+    (promptToEdit?.tags?.find((t) => t === 'UGC' || t === 'POV') as any) || null
+  );
   const [tagInput, setTagInput] = useState('');
-  const [tags, setTags] = useState<string[]>(promptToEdit?.tags || ['Midjourney v6']);
+  const [tags, setTags] = useState<string[]>(
+    promptToEdit?.tags?.filter((t) => t !== 'UGC' && t !== 'POV') || ['Midjourney v6']
+  );
   const [mediaUrl, setMediaUrl] = useState(promptToEdit?.media_url || '');
   const [mediaType, setMediaType] = useState<MediaType>(promptToEdit?.media_type || 'image');
   const [isPublished, setIsPublished] = useState(promptToEdit?.is_published ?? true);
@@ -95,12 +100,14 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
       setSubmitting(true);
       setErrorMsg('');
 
+      const combinedTags = styleSubcategory ? [styleSubcategory, ...tags] : tags;
+
       const payload = {
         title: title.trim(),
         description: description.trim() || undefined,
         content: content.trim(),
         category_id: categoryId || undefined,
-        tags,
+        tags: combinedTags,
         media_url: mediaUrl || undefined,
         media_type: mediaUrl ? mediaType : 'none',
         is_published: publishStatus,
@@ -180,7 +187,7 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
 
           {/* Categorias em Pílulas */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-200">Categoria</label>
+            <label className="text-xs font-semibold text-slate-200">Categoria Principal</label>
             <div className="flex flex-wrap gap-2">
               {categories.map((cat) => {
                 const isSelected = categoryId === cat.id;
@@ -196,6 +203,33 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
                     }`}
                   >
                     {cat.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Subcategoria de Estilo (UGC / POV) */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-200 flex items-center justify-between">
+              <span>Subcategoria de Estilo</span>
+              <span className="text-[11px] text-slate-500 font-normal">Opcional</span>
+            </label>
+            <div className="flex items-center gap-2">
+              {(['UGC', 'POV'] as const).map((style) => {
+                const isSelected = styleSubcategory === style;
+                return (
+                  <button
+                    key={style}
+                    type="button"
+                    onClick={() => setStyleSubcategory(isSelected ? null : style)}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                      isSelected
+                        ? 'bg-cyan-600 text-white border border-cyan-400 shadow-md shadow-cyan-950/40'
+                        : 'bg-[#131522] text-slate-300 border border-[#24283e] hover:bg-[#1a1c2d]'
+                    }`}
+                  >
+                    Estilo {style}
                   </button>
                 );
               })}
