@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Upload,
@@ -8,7 +8,10 @@ import {
   Loader2,
   CheckCircle,
   FileCode2,
-  Rocket
+  Rocket,
+  Edit2,
+  Trash2,
+  Check
 } from 'lucide-react';
 import type { Database, MediaType } from '../types/database.types';
 import { promptsService, storageService } from '../services/promptService';
@@ -38,9 +41,99 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
   const [styleSubcategory, setStyleSubcategory] = useState<'UGC' | 'POV' | null>(
     (promptToEdit?.tags?.find((t) => t === 'UGC' || t === 'POV') as any) || null
   );
+  const [videoStructure, setVideoStructure] = useState<'GANCHO' | 'MOVIMENTO' | 'CTA' | null>(
+    (promptToEdit?.tags?.find((t) => t === 'GANCHO' || t === 'MOVIMENTO' || t === 'CTA') as any) || null
+  );
+  // Plataformas / Modelos onde o prompt funciona melhor (persistidas em localStorage para customização total)
+  const DEFAULT_PLATFORMS = [
+    'Midjourney v6',
+    'ChatGPT-4o',
+    'Claude 3.5',
+    'Kling AI',
+    'Luma Dream Machine',
+    'Runway Gen-3',
+    'Sora',
+    'Flux.1',
+    'DALL-E 3',
+    'Stable Diffusion',
+  ];
+
+  const [availablePlatforms, setAvailablePlatforms] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('prompt_platforms_options');
+      return saved ? JSON.parse(saved) : DEFAULT_PLATFORMS;
+    } catch {
+      return DEFAULT_PLATFORMS;
+    }
+  });
+
+  const [newPlatformInput, setNewPlatformInput] = useState('');
+  const [editingPlatform, setEditingPlatform] = useState<string | null>(null);
+  const [editPlatformInput, setEditPlatformInput] = useState('');
+
+  const savePlatforms = (updated: string[]) => {
+    setAvailablePlatforms(updated);
+    try {
+      localStorage.setItem('prompt_platforms_options', JSON.stringify(updated));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleAddPlatform = () => {
+    const val = newPlatformInput.trim();
+    if (val && !availablePlatforms.some((p) => p.toLowerCase() === val.toLowerCase())) {
+      const updated = [...availablePlatforms, val];
+      savePlatforms(updated);
+      setSelectedPlatforms((prev) => [...prev, val]);
+      setNewPlatformInput('');
+    }
+  };
+
+  const handleDeletePlatform = (platform: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = availablePlatforms.filter((p) => p !== platform);
+    savePlatforms(updated);
+    setSelectedPlatforms((prev) => prev.filter((p) => p !== platform));
+    if (editingPlatform === platform) {
+      setEditingPlatform(null);
+    }
+  };
+
+  const handleStartEditPlatform = (platform: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingPlatform(platform);
+    setEditPlatformInput(platform);
+  };
+
+  const handleSaveEditPlatform = (oldPlatform: string, e: React.MouseEvent | React.KeyboardEvent) => {
+    e.stopPropagation();
+    const val = editPlatformInput.trim();
+    if (!val) {
+      setEditingPlatform(null);
+      return;
+    }
+    const updated = availablePlatforms.map((p) => (p === oldPlatform ? val : p));
+    savePlatforms(updated);
+    setSelectedPlatforms((prev) => prev.map((p) => (p === oldPlatform ? val : p)));
+    setEditingPlatform(null);
+  };
+
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(() => {
+    if (!promptToEdit?.tags) return ['Midjourney v6'];
+    const matched = promptToEdit.tags.filter((t) =>
+      availablePlatforms.some((p) => p.toLowerCase() === t.toLowerCase())
+    );
+    return matched.length > 0 ? matched : ['Midjourney v6'];
+  });
+
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>(
-    promptToEdit?.tags?.filter((t) => t !== 'UGC' && t !== 'POV') || ['Midjourney v6']
+    promptToEdit?.tags?.filter(
+      (t) =>
+        !['UGC', 'POV', 'GANCHO', 'MOVIMENTO', 'CTA'].includes(t) &&
+        !availablePlatforms.some((p) => p.toLowerCase() === t.toLowerCase())
+    ) || []
   );
   const [mediaUrl, setMediaUrl] = useState(promptToEdit?.media_url || '');
   const [mediaType, setMediaType] = useState<MediaType>(promptToEdit?.media_type || 'image');
@@ -52,6 +145,13 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
 
   // Sugestões de variáveis para inserir rapidamente
   const quickVariables = ['TEMA', 'ESTILO', 'ILUMINAÇÃO', 'ÂNGULO', 'PRODUTO'];
+
+  const selectedCategoryObj = categories.find((c) => c.id === categoryId);
+  const isVideoCategory =
+    selectedCategoryObj?.slug === 'videos' ||
+    selectedCategoryObj?.name?.toLowerCase().includes('vídeo') ||
+    selectedCategoryObj?.name?.toLowerCase().includes('video') ||
+    mediaType === 'video';
 
   const handleAddVariable = (varName: string) => {
     setContent((prev) => `${prev} {{${varName}}}`);
@@ -108,7 +208,11 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
       setSubmitting(true);
       setErrorMsg('');
 
-      const combinedTags = styleSubcategory ? [styleSubcategory, ...tags] : tags;
+      const specialTags: string[] = [];
+      if (styleSubcategory) specialTags.push(styleSubcategory);
+      if (videoStructure && isVideoCategory) specialTags.push(videoStructure);
+
+      const combinedTags = Array.from(new Set([...specialTags, ...selectedPlatforms, ...tags]));
 
       const payload = {
         title: title.trim(),
@@ -244,6 +348,35 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
             </div>
           </div>
 
+          {/* Etapa do Vídeo (GANCHO, MOVIMENTO, CTA) - exibido quando for Vídeo */}
+          {isVideoCategory && (
+            <div className="space-y-1.5 p-3.5 rounded-2xl bg-purple-950/20 border border-purple-800/40 animate-in fade-in duration-200">
+              <label className="text-xs font-semibold text-purple-200 flex items-center justify-between">
+                <span>Momento / Estrutura do Vídeo</span>
+                <span className="text-[10px] text-purple-400 font-normal">Exclusivo para Vídeos</span>
+              </label>
+              <div className="flex items-center gap-2 pt-1 flex-wrap">
+                {(['GANCHO', 'MOVIMENTO', 'CTA'] as const).map((structure) => {
+                  const isSelected = videoStructure === structure;
+                  return (
+                    <button
+                      key={structure}
+                      type="button"
+                      onClick={() => setVideoStructure(isSelected ? null : structure)}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                        isSelected
+                          ? 'bg-purple-600 text-white border border-purple-400 shadow-md shadow-purple-900/50'
+                          : 'bg-[#131522] text-slate-300 border border-[#24283e] hover:border-purple-600/40 hover:text-white'
+                      }`}
+                    >
+                      {structure}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Descrição Curta */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-xs">
@@ -355,6 +488,132 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
                   className="w-full bg-transparent text-xs text-slate-300 placeholder:text-slate-600 focus:outline-none"
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Onde o Prompt Funciona Melhor (Modelos / Ferramentas) */}
+          <div className="space-y-2 p-3.5 rounded-2xl bg-[#131522] border border-[#24283e]">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                <span>Onde este prompt funciona melhor?</span>
+              </label>
+              <span className="text-[10px] text-slate-500 font-normal">
+                {selectedPlatforms.length} selecionado(s)
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              Selecione as IAs recomendadas (ou crie, edite e remova opções):
+            </p>
+
+            {/* Lista de Plataformas / Opções com suporte a Edição e Exclusão */}
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {availablePlatforms.map((platform) => {
+                const isSelected = selectedPlatforms.includes(platform);
+                const isEditing = editingPlatform === platform;
+
+                if (isEditing) {
+                  return (
+                    <div
+                      key={platform}
+                      className="flex items-center gap-1 bg-[#1a1c2d] border border-purple-500 rounded-lg px-2 py-0.5"
+                    >
+                      <input
+                        type="text"
+                        autoFocus
+                        value={editPlatformInput}
+                        onChange={(e) => setEditPlatformInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleSaveEditPlatform(platform, e);
+                          if (e.key === 'Escape') setEditingPlatform(null);
+                        }}
+                        className="bg-transparent text-xs text-white focus:outline-none w-28 font-medium"
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => handleSaveEditPlatform(platform, e)}
+                        className="text-emerald-400 hover:text-emerald-300 p-0.5"
+                        title="Salvar"
+                      >
+                        <Check className="w-3 h-3" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingPlatform(null)}
+                        className="text-slate-400 hover:text-slate-200 p-0.5"
+                        title="Cancelar"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div
+                    key={platform}
+                    onClick={() => {
+                      if (isSelected) {
+                        setSelectedPlatforms(selectedPlatforms.filter((p) => p !== platform));
+                      } else {
+                        setSelectedPlatforms([...selectedPlatforms, platform]);
+                      }
+                    }}
+                    className={`group/item relative flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-all ${
+                      isSelected
+                        ? 'bg-purple-600 text-white border border-purple-400 shadow-sm shadow-purple-950/40'
+                        : 'bg-[#181a29] text-slate-400 border border-[#272b43] hover:text-slate-200 hover:border-slate-600'
+                    }`}
+                  >
+                    <span>{platform}</span>
+
+                    {/* Botões rápidos de Editar e Excluir */}
+                    <div className="flex items-center gap-0.5 opacity-0 group-hover/item:opacity-100 transition-opacity ml-1">
+                      <button
+                        type="button"
+                        onClick={(e) => handleStartEditPlatform(platform, e)}
+                        className="p-0.5 hover:text-white text-slate-300"
+                        title="Editar nome"
+                      >
+                        <Edit2 className="w-2.5 h-2.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeletePlatform(platform, e)}
+                        className="p-0.5 hover:text-rose-400 text-slate-300"
+                        title="Excluir opção"
+                      >
+                        <Trash2 className="w-2.5 h-2.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Criar Nova Opção / Plataforma */}
+            <div className="flex items-center gap-2 pt-2 border-t border-[#1e2238] mt-2">
+              <input
+                type="text"
+                placeholder="Adicionar nova ferramenta/IA (ex: Midjourney v7)..."
+                value={newPlatformInput}
+                onChange={(e) => setNewPlatformInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddPlatform();
+                  }
+                }}
+                className="flex-1 px-3 py-1.5 rounded-lg bg-[#0e101a] border border-[#24283e] text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-purple-500"
+              />
+              <button
+                type="button"
+                onClick={handleAddPlatform}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-purple-600/80 hover:bg-purple-600 text-white text-xs font-medium transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Adicionar</span>
+              </button>
             </div>
           </div>
 

@@ -257,8 +257,32 @@ export const PromptDetailsModal: React.FC<PromptDetailsModalProps> = ({
             </h4>
             <div className="p-3.5 rounded-xl bg-[#131521] border border-[#21253a] text-xs text-slate-300 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-purple-400" />
-                <span>Compatível com Midjourney v6, ChatGPT-4o e Claude 3.5 Sonnet</span>
+                <Sparkles className="w-4 h-4 text-purple-400 shrink-0" />
+                <span>
+                  {(() => {
+                    const knownPlatforms = [
+                      'midjourney',
+                      'chatgpt',
+                      'claude',
+                      'kling',
+                      'luma',
+                      'runway',
+                      'sora',
+                      'flux',
+                      'dall-e',
+                      'stable diffusion',
+                    ];
+                    const matched = prompt.tags?.filter((t) =>
+                      knownPlatforms.some((k) => t.toLowerCase().includes(k))
+                    );
+
+                    if (matched && matched.length > 0) {
+                      return `Compatível e otimizado para: ${matched.join(', ')}`;
+                    }
+
+                    return 'Compatível com Midjourney v6, ChatGPT-4o e Claude 3.5 Sonnet';
+                  })()}
+                </span>
               </div>
             </div>
           </div>

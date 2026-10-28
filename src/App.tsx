@@ -33,6 +33,7 @@ export const App: React.FC = () => {
   const [prompts, setPrompts] = useState<PromptItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedStyle, setSelectedStyle] = useState<'UGC' | 'POV' | null>(null);
+  const [selectedVideoStructure, setSelectedVideoStructure] = useState<'GANCHO' | 'MOVIMENTO' | 'CTA' | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'created_at' | 'title'>('created_at');
   const [loading, setLoading] = useState(false);
@@ -189,9 +190,16 @@ export const App: React.FC = () => {
   }
 
   // TELA PRINCIPAL (Para usuários APROVADOS ou ADMINS)
+  const currentCategoryObj = categories.find((c) => c.id === selectedCategory);
+  const isViewingVideos =
+    currentCategoryObj?.slug === 'videos' ||
+    currentCategoryObj?.name?.toLowerCase().includes('vídeo') ||
+    currentCategoryObj?.name?.toLowerCase().includes('video');
+
   const filteredPrompts = prompts.filter((p) => {
     if (selectedCategory && p.category_id !== selectedCategory) return false;
     if (selectedStyle && (!p.tags || !p.tags.includes(selectedStyle))) return false;
+    if (selectedVideoStructure && (!p.tags || !p.tags.includes(selectedVideoStructure))) return false;
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -338,6 +346,43 @@ export const App: React.FC = () => {
                 );
               })}
             </div>
+
+            {/* Linha 3: Filtro de Estrutura de Vídeo (GANCHO, MOVIMENTO, CTA) quando estiver na categoria Vídeos */}
+            {isViewingVideos && (
+              <div className="flex items-center gap-2 text-xs pt-0.5 animate-in fade-in duration-200">
+                <span className="text-[11px] font-semibold text-purple-400 uppercase tracking-wider">
+                  Etapa:
+                </span>
+                <button
+                  onClick={() => setSelectedVideoStructure(null)}
+                  className={`px-2.5 py-0.5 rounded-lg text-xs font-medium transition-all ${
+                    selectedVideoStructure === null
+                      ? 'bg-purple-950/60 text-purple-300 border border-purple-700/60'
+                      : 'text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  Todas as Etapas
+                </button>
+                {(['GANCHO', 'MOVIMENTO', 'CTA'] as const).map((structure) => {
+                  const isSelected = selectedVideoStructure === structure;
+                  return (
+                    <button
+                      key={structure}
+                      onClick={() =>
+                        setSelectedVideoStructure(isSelected ? null : structure)
+                      }
+                      className={`px-2.5 py-0.5 rounded-lg text-xs font-semibold transition-all ${
+                        isSelected
+                          ? 'bg-purple-600 text-white border border-purple-400 shadow-sm shadow-purple-950/50'
+                          : 'bg-[#131520] text-slate-400 border border-[#23273c] hover:text-white'
+                      }`}
+                    >
+                      {structure}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* 4. Contador de Prompts & Ordenação */}

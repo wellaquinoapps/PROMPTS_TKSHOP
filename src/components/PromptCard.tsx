@@ -52,15 +52,25 @@ export const PromptCard: React.FC<PromptCardProps> = ({
             <div className="flex items-center justify-between gap-1 sm:gap-2 mb-2 sm:mb-3">
               <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
                 {categoryName && (
-                    <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-[11px] font-medium bg-[#1d2030] text-slate-300 border border-[#2b3049]">
-                      {categoryName}
-                    </span>
-            )}
-                    {prompt.tags && prompt.tags.length > 0 && (
-              <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-[11px] font-semibold bg-purple-950/60 text-purple-300 border border-purple-800/50">
-                {prompt.tags[0]}
+              <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-[11px] font-medium bg-[#1d2030] text-slate-300 border border-[#2b3049]">
+                {categoryName}
               </span>
             )}
+            {prompt.tags &&
+              prompt.tags.slice(0, 2).map((t, idx) => (
+                <span
+                  key={idx}
+                  className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-[11px] font-semibold border ${
+                    t === 'UGC' || t === 'POV'
+                      ? 'bg-cyan-950/60 text-cyan-300 border-cyan-800/50'
+                      : t === 'GANCHO' || t === 'MOVIMENTO' || t === 'CTA'
+                      ? 'bg-purple-950/80 text-purple-200 border-purple-700/60'
+                      : 'bg-purple-950/60 text-purple-300 border border-purple-800/50'
+                  }`}
+                >
+                  {t}
+                </span>
+              ))}
             {!prompt.is_published && (
               <span className="px-2 py-0.5 rounded text-[10px] bg-amber-950/80 text-amber-300 border border-amber-700">
                 Rascunho
