@@ -8,6 +8,8 @@ interface AuthContextType {
   profile: ProfileRow | null;
   session: Session | null;
   isAdmin: boolean;
+  isApproved: boolean;
+  isPending: boolean;
   isLoading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -18,6 +20,8 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   session: null,
   isAdmin: false,
+  isApproved: false,
+  isPending: false,
   isLoading: true,
   signOut: async () => {},
   refreshProfile: async () => {},
@@ -40,11 +44,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!error && data) {
         setProfile(data as ProfileRow);
       } else {
-        // Perfil fallback se o trigger ainda não disparou ou está criando
         setProfile({
           id: userId,
+          email: user?.email || null,
           display_name: user?.email?.split('@')[0] || 'Usuário',
           role: 'user',
+          status: 'pending',
           avatar_url: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -62,7 +67,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // 1. Obter sessão atual
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -73,7 +77,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
-    // 2. Ouvir alterações de estado de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, newSession) => {
         setSession(newSession);
@@ -100,6 +103,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const isAdmin = profile?.role === 'admin';
+  const isApproved = isAdmin || profile?.status === 'approved';
+  const isPending = !!user && !isAdmin && profile?.status === 'pending';
 
   return (
     <AuthContext.Provider
@@ -108,6 +113,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         profile,
         session,
         isAdmin,
+        isApproved,
+        isPending,
         isLoading,
         signOut,
         refreshProfile,
@@ -119,4 +126,3 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 export const useAuth = () => useContext(AuthContext);
-

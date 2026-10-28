@@ -1,7 +1,3 @@
-/**
- * Tipos TypeScript gerados para o esquema Supabase da Biblioteca de Prompts
- */
-
 export type Json =
   | string
   | number
@@ -11,6 +7,7 @@ export type Json =
   | Json[];
 
 export type AppRole = 'user' | 'admin';
+export type UserStatus = 'pending' | 'approved' | 'rejected';
 export type MediaType = 'none' | 'image' | 'gif' | 'video';
 
 export interface Database {
@@ -19,24 +16,30 @@ export interface Database {
       profiles: {
         Row: {
           id: string;
+          email: string | null;
           display_name: string | null;
           role: AppRole;
+          status: UserStatus;
           avatar_url: string | null;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id: string;
+          email?: string | null;
           display_name?: string | null;
           role?: AppRole;
+          status?: UserStatus;
           avatar_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           id?: string;
+          email?: string | null;
           display_name?: string | null;
           role?: AppRole;
+          status?: UserStatus;
           avatar_url?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -124,6 +127,10 @@ export interface Database {
         Args: Record<PropertyKey, never>;
         Returns: boolean;
       };
+      is_approved: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
+      };
       search_prompts: {
         Args: {
           search_query?: string | null;
@@ -154,8 +161,8 @@ export interface Database {
     };
     Enums: {
       app_role: AppRole;
+      user_status: UserStatus;
       media_type_enum: MediaType;
     };
   };
 }
-

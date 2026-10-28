@@ -1,105 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import {
   Search,
-  SlidersHorizontal,
   Plus,
-  Bookmark,
   User as UserIcon,
   Sparkles,
   Layers,
-  ChevronDown,
   LogOut,
   Shield,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Clock,
+  ShieldAlert,
+  Users
 } from 'lucide-react';
 import { useAuth } from './context/AuthContext';
 import { PromptCard } from './components/PromptCard';
 import { PromptDetailsModal } from './components/PromptDetailsModal';
 import { CreatePromptModal } from './components/CreatePromptModal';
 import { LoginModal } from './components/LoginModal';
+import { AdminUsersModal } from './components/AdminUsersModal';
 import { categoriesService, promptsService } from './services/promptService';
 import type { Database } from './types/database.types';
 
 type CategoryItem = Database['public']['Tables']['categories']['Row'];
 type PromptItem = Database['public']['Tables']['prompts']['Row'];
 
-// Dados iniciais de fallback enquanto o banco estiver sendo populado
-const INITIAL_CATEGORIES: CategoryItem[] = [
-  { id: 'cat-1', name: 'Imagens', slug: 'imagens', description: null, created_at: '', updated_at: '' },
-  { id: 'cat-2', name: 'Marketing', slug: 'marketing', description: null, created_at: '', updated_at: '' },
-  { id: 'cat-3', name: 'Programação', slug: 'programacao', description: null, created_at: '', updated_at: '' },
-  { id: 'cat-4', name: 'Vídeos', slug: 'videos', description: null, created_at: '', updated_at: '' },
-];
-
-const INITIAL_DEMO_PROMPTS: PromptItem[] = [
-  {
-    id: 'demo-1',
-    title: 'Retrato cinematográfico profissional',
-    slug: 'retrato-cinematografico-profissional',
-    description: 'Retrato dramático com iluminação de estúdio Hasselblad',
-    content: 'Editorial portrait of {{subject}}, dramatic {{lighting}}, Hasselblad H6D-100c, 8k --v 6.0 --ar 16:9',
-    category_id: 'cat-1',
-    tags: ['Midjourney v6', 'Retratos', '8k'],
-    media_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1200&q=80',
-    media_type: 'image',
-    is_published: true,
-    created_by: null,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: 'demo-2',
-    title: 'Landing page SaaS de alta conversão',
-    slug: 'landing-page-saas-alta-conversao',
-    description: 'Framework PAS com seções persuasivas e microcopy para CTAs',
-    content: 'Atue como copywriter sênior especialista em B2B. Crie uma landing page completa para {{niche}} estruturada em Framework PAS com 5 seções persuasivas e microcopy para CTAs.',
-    category_id: 'cat-2',
-    tags: ['Claude 3.5 Sonnet', 'Copywriting', 'SaaS'],
-    media_url: null,
-    media_type: 'none',
-    is_published: true,
-    created_by: null,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: 'demo-3',
-    title: 'Análise e refatoração de código',
-    slug: 'analise-refatoracao-codigo',
-    description: 'Aplica princípios SOLID, remove code smells e adiciona testes',
-    content: 'Refatore o trecho em {{language}} aplicando os princípios SOLID, eliminando code smells e adicionando comentários tipados e testes unitários.',
-    category_id: 'cat-3',
-    tags: ['GPT-4o', 'Engenharia', 'CleanCode'],
-    media_url: null,
-    media_type: 'none',
-    is_published: true,
-    created_by: null,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: 'demo-4',
-    title: 'Vídeo promocional de produto',
-    slug: 'video-promocional-produto',
-    description: 'Drone sweep macro 4k cinemático e hiperdetalhado',
-    content: 'Dynamic macro drone sweep revolving around minimalist {{product}} floating over dark water ripples, hyper-detailed caustics, cinematic 60fps, 4k.',
-    category_id: 'cat-4',
-    tags: ['Sora / Runway Gen-3', 'VFX', 'Cinematic'],
-    media_url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1200&q=80',
-    media_type: 'image',
-    is_published: true,
-    created_by: null,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-];
-
 export const App: React.FC = () => {
-  const { user, profile, isAdmin, signOut } = useAuth();
+  const { user, profile, isAdmin, isApproved, isPending, signOut, refreshProfile } = useAuth();
 
-  const [categories, setCategories] = useState<CategoryItem[]>(INITIAL_CATEGORIES);
-  const [prompts, setPrompts] = useState<PromptItem[]>(INITIAL_DEMO_PROMPTS);
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [prompts, setPrompts] = useState<PromptItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'created_at' | 'title'>('created_at');
@@ -109,9 +39,12 @@ export const App: React.FC = () => {
   const [activePromptDetails, setActivePromptDetails] = useState<PromptItem | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isAdminUsersOpen, setIsAdminUsersOpen] = useState(false);
 
-  // Carregar Categorias e Prompts do Supabase
+  // Carregar dados reais apenas se autenticado e aprovado
   const loadData = async () => {
+    if (!user || !isApproved) return;
+
     try {
       setLoading(true);
       const [fetchedCats, searchRes] = await Promise.allSettled([
@@ -124,25 +57,115 @@ export const App: React.FC = () => {
         }),
       ]);
 
-      if (fetchedCats.status === 'fulfilled' && fetchedCats.value.length > 0) {
+      if (fetchedCats.status === 'fulfilled') {
         setCategories(fetchedCats.value);
       }
 
-      if (searchRes.status === 'fulfilled' && searchRes.value && searchRes.value.prompts && searchRes.value.prompts.length > 0) {
+      if (
+        searchRes.status === 'fulfilled' &&
+        searchRes.value &&
+        searchRes.value.prompts
+      ) {
         setPrompts(searchRes.value.prompts as PromptItem[]);
       }
     } catch (err) {
-      console.warn('Usando catálogo inicial demonstrativo:', err);
+      console.error('Erro ao buscar dados do banco:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
-  }, [selectedCategory, sortBy]);
+    if (user && isApproved) {
+      loadData();
+    }
+  }, [user, isApproved, selectedCategory, sortBy]);
 
-  // Filtragem local instantânea enquanto digita
+  // Se o usuário não estiver logado, exibe diretamente o card centralizado limpo de login / criação de conta
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-[#0c0d12] text-slate-100 flex flex-col justify-center items-center p-4">
+        <LoginModal
+          isOpen={true}
+          onSuccess={() => {}}
+        />
+      </div>
+    );
+  }
+
+  // Se o usuário estiver logado, mas aguardando aprovação
+  if (isPending) {
+    return (
+      <div className="min-h-screen bg-[#0c0d12] text-slate-100 flex flex-col justify-center items-center p-4">
+        <div className="max-w-md w-full bg-[#131522] border border-[#23273e] rounded-3xl p-6 sm:p-8 text-center space-y-5 shadow-2xl">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center mx-auto">
+            <Clock className="w-7 h-7 animate-pulse" />
+          </div>
+
+          <div>
+            <h2 className="text-xl font-bold text-white">Cadastro em Análise</h2>
+            <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+              Olá, <strong className="text-purple-300">{profile?.display_name || user.email}</strong>!
+              Sua conta com o e-mail <span className="font-mono text-slate-300">{user.email}</span> foi criada com sucesso, mas requer a aprovação do Administrador para acessar a biblioteca.
+            </p>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-[#0e1019] border border-[#1f2233] text-xs text-slate-400 text-left space-y-1.5">
+            <p className="font-medium text-slate-300">Próximos passos:</p>
+            <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-400">
+              <li>O administrador avaliará seu cadastro.</li>
+              <li>Assim que aprovado, o acesso completo será liberado automaticamente.</li>
+            </ul>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => refreshProfile()}
+              className="flex-1 py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Verificar Aprovação</span>
+            </button>
+            <button
+              onClick={() => signOut()}
+              className="py-2.5 px-4 rounded-xl border border-slate-700/80 hover:bg-white/5 text-slate-300 text-xs font-medium transition-colors"
+            >
+              Sair
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Se a conta tiver sido rejeitada pelo admin
+  if (profile?.status === 'rejected') {
+    return (
+      <div className="min-h-screen bg-[#0c0d12] text-slate-100 flex flex-col justify-center items-center p-4">
+        <div className="max-w-md w-full bg-[#131522] border border-rose-500/30 rounded-3xl p-6 sm:p-8 text-center space-y-5 shadow-2xl">
+          <div className="w-14 h-14 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-400 flex items-center justify-center mx-auto">
+            <ShieldAlert className="w-7 h-7" />
+          </div>
+
+          <div>
+            <h2 className="text-xl font-bold text-white">Acesso Não Aprovado</h2>
+            <p className="text-xs text-slate-400 mt-2">
+              A solicitação de acesso para a conta <span className="font-mono text-slate-300">{user.email}</span> foi recusada pela administração da plataforma.
+            </p>
+          </div>
+
+          <button
+            onClick={() => signOut()}
+            className="w-full py-2.5 px-4 rounded-xl bg-[#1c1f30] hover:bg-[#252940] text-slate-300 text-xs font-medium transition-colors"
+          >
+            Encerrar Sessão
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // TELA PRINCIPAL (Para usuários APROVADOS ou ADMINS)
   const filteredPrompts = prompts.filter((p) => {
     if (selectedCategory && p.category_id !== selectedCategory) return false;
     if (!searchQuery.trim()) return true;
@@ -157,9 +180,9 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0c0d12] text-slate-100 flex flex-col font-sans selection:bg-purple-600 selection:text-white">
-      {/* 1. Header / Barra Superior */}
+      {/* 1. Header Superior */}
       <header className="sticky top-0 z-40 bg-[#0c0d12]/90 backdrop-blur-md border-b border-[#1b1e2c] px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4">
-        {/* Logo & Marca */}
+        {/* Logo */}
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-purple-600 flex items-center justify-center text-white shadow-lg shadow-purple-900/50">
             <Sparkles className="w-5 h-5" />
@@ -174,7 +197,7 @@ export const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Barra de Pesquisa Central */}
+        {/* Busca Central */}
         <div className="flex-1 max-w-md hidden sm:flex items-center relative">
           <Search className="absolute left-3.5 w-4 h-4 text-slate-500" />
           <input
@@ -195,48 +218,53 @@ export const App: React.FC = () => {
 
         {/* Ações da Direita */}
         <div className="flex items-center gap-2.5">
-          {/* Botão Novo Prompt (Abre modal de criação / restrito a admin no backend) */}
-          <button
-            onClick={() => (user ? setIsCreateOpen(true) : setIsLoginOpen(true))}
-            className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-xs shadow-md shadow-purple-900/40 transition-all"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Novo Prompt</span>
-          </button>
-
-          {/* Autenticação & Perfil */}
-          {user ? (
-            <div className="flex items-center gap-2">
-              <div className="px-3 py-1.5 rounded-xl bg-[#141624] border border-[#23273c] flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-purple-700 flex items-center justify-center text-xs font-bold text-white">
-                  {profile?.display_name?.charAt(0).toUpperCase() || 'U'}
-                </div>
-                <div className="text-left hidden md:block">
-                  <p className="text-xs font-semibold text-white leading-tight">
-                    {profile?.display_name || user.email?.split('@')[0]}
-                  </p>
-                  <p className="text-[10px] text-purple-400 capitalize flex items-center gap-1">
-                    {isAdmin && <Shield className="w-2.5 h-2.5 text-purple-400" />}
-                    <span>{profile?.role || 'Usuário'}</span>
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => signOut()}
-                title="Sair"
-                className="p-2 rounded-xl hover:bg-white/5 text-slate-400 hover:text-rose-400 transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
-          ) : (
+          {/* Painel de Gestão de Usuários (Exclusivo Admin) */}
+          {isAdmin && (
             <button
-              onClick={() => setIsLoginOpen(true)}
-              className="px-4 py-2 rounded-xl bg-[#141624] hover:bg-[#1a1e30] border border-[#252a42] text-xs font-medium text-white transition-colors"
+              onClick={() => setIsAdminUsersOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#181a29] hover:bg-[#20243b] text-purple-300 border border-purple-800/50 font-medium text-xs transition-colors"
+              title="Gerenciar cadastros e aprovações"
             >
-              Entrar
+              <Users className="w-3.5 h-3.5 text-purple-400" />
+              <span className="hidden md:inline">Aprovações</span>
             </button>
           )}
+
+          {/* Botão Novo Prompt (Admin) */}
+          {isAdmin && (
+            <button
+              onClick={() => setIsCreateOpen(true)}
+              className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-xs shadow-md shadow-purple-900/40 transition-all"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Novo Prompt</span>
+            </button>
+          )}
+
+          {/* Perfil & Logout */}
+          <div className="flex items-center gap-2">
+            <div className="px-3 py-1.5 rounded-xl bg-[#141624] border border-[#23273c] flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-purple-700 flex items-center justify-center text-xs font-bold text-white">
+                {profile?.display_name?.charAt(0).toUpperCase() || 'U'}
+              </div>
+              <div className="text-left hidden md:block">
+                <p className="text-xs font-semibold text-white leading-tight">
+                  {profile?.display_name || user.email?.split('@')[0]}
+                </p>
+                <p className="text-[10px] text-purple-400 capitalize flex items-center gap-1">
+                  {isAdmin && <Shield className="w-2.5 h-2.5 text-purple-400" />}
+                  <span>{profile?.role || 'Usuário'}</span>
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => signOut()}
+              title="Sair"
+              className="p-2 rounded-xl hover:bg-white/5 text-slate-400 hover:text-rose-400 transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -254,7 +282,7 @@ export const App: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. Barra de Categorias em Pílulas */}
+      {/* 3. Categorias em Pílulas */}
       <div className="px-4 sm:px-8 pt-4 pb-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
         <button
           onClick={() => setSelectedCategory(null)}
@@ -348,7 +376,7 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      {/* 6. Barra de Navegação Inferior Fixa (Mobile) */}
+      {/* 6. Barra Mobile */}
       <nav className="sm:hidden sticky bottom-0 z-40 bg-[#0c0d12]/95 backdrop-blur-md border-t border-[#1b1e2c] px-6 py-2.5 flex items-center justify-between text-[11px] text-slate-400">
         <button
           onClick={() => {
@@ -361,22 +389,24 @@ export const App: React.FC = () => {
           <span>Biblioteca</span>
         </button>
 
-        <button
-          onClick={() => (user ? setIsCreateOpen(true) : setIsLoginOpen(true))}
-          className="flex flex-col items-center gap-1 text-slate-400 hover:text-white"
-        >
-          <div className="w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center text-white -mt-3 shadow-lg shadow-purple-900/60 border-2 border-[#0c0d12]">
-            <Plus className="w-4 h-4" />
-          </div>
-          <span>Novo</span>
-        </button>
+        {isAdmin && (
+          <button
+            onClick={() => setIsCreateOpen(true)}
+            className="flex flex-col items-center gap-1 text-slate-400 hover:text-white"
+          >
+            <div className="w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center text-white -mt-3 shadow-lg shadow-purple-900/60 border-2 border-[#0c0d12]">
+              <Plus className="w-4 h-4" />
+            </div>
+            <span>Novo</span>
+          </button>
+        )}
 
         <button
-          onClick={() => (!user ? setIsLoginOpen(true) : null)}
-          className="flex flex-col items-center gap-1 text-slate-400 hover:text-white"
+          onClick={() => signOut()}
+          className="flex flex-col items-center gap-1 text-slate-400 hover:text-rose-400"
         >
-          <UserIcon className="w-4 h-4" />
-          <span>{user ? 'Perfil' : 'Entrar'}</span>
+          <LogOut className="w-4 h-4" />
+          <span>Sair</span>
         </button>
       </nav>
 
@@ -402,13 +432,9 @@ export const App: React.FC = () => {
         />
       )}
 
-      <LoginModal
-        isOpen={isLoginOpen}
-        onClose={() => setIsLoginOpen(false)}
-        onSuccess={() => {
-          setIsLoginOpen(false);
-          loadData();
-        }}
+      <AdminUsersModal
+        isOpen={isAdminUsersOpen}
+        onClose={() => setIsAdminUsersOpen(false)}
       />
     </div>
   );
