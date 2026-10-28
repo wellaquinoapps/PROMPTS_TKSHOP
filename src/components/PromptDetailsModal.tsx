@@ -116,23 +116,23 @@ export const PromptDetailsModal: React.FC<PromptDetailsModalProps> = ({
 
         {/* Conteúdo com Scroll */}
         <div className="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1">
-          {/* Mídia em Destaque */}
+          {/* Mídia em Destaque Dinâmica (respeita proporção natural 9:16, 16:9, etc) */}
           {prompt.media_url && (
-            <div className="relative w-full h-64 sm:h-72 rounded-2xl overflow-hidden bg-black/40 border border-[#23273c]">
+            <div className="relative w-full rounded-2xl overflow-hidden bg-[#08090e] border border-[#23273c] flex items-center justify-center">
               {prompt.media_type === 'video' ? (
                 <video
                   src={prompt.media_url}
                   controls
-                  className="w-full h-full object-cover"
+                  className="w-full max-h-[500px] object-contain rounded-2xl"
                 />
               ) : (
                 <img
                   src={prompt.media_url}
                   alt={prompt.title}
-                  className="w-full h-full object-cover"
+                  className="w-full max-h-[500px] object-contain rounded-2xl"
                 />
               )}
-              <div className="absolute bottom-3 left-3 flex items-center gap-2 px-3 py-1 rounded-lg bg-black/70 backdrop-blur-md text-xs text-slate-300 border border-white/10">
+              <div className="absolute bottom-3 left-3 flex items-center gap-2 px-3 py-1 rounded-lg bg-black/75 backdrop-blur-md text-xs text-slate-300 border border-white/10 pointer-events-none">
                 <span className="w-2 h-2 rounded-full bg-cyan-400" />
                 <span>{categoryName || 'Mídia'}</span>
                 {prompt.tags[0] && <span>• {prompt.tags[0]}</span>}

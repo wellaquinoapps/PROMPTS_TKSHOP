@@ -133,13 +133,13 @@ export const PromptCard: React.FC<PromptCardProps> = ({
           </div>
         </div>
 
-        {/* Mídia */}
+        {/* Mídia demonstrativa dinâmica (respeita proporção natural 9:16, 16:9, 1:1 sem corte) */}
         {prompt.media_url && !mediaError && (
-          <div className="relative w-full h-44 rounded-xl overflow-hidden mb-3 bg-[#0c0d12] border border-[#23263b]">
+          <div className="relative w-full rounded-xl overflow-hidden mb-3 bg-[#0a0b10] border border-[#23263b] flex items-center justify-center">
             {prompt.media_type === 'video' ? (
               <video
                 src={prompt.media_url}
-                className="w-full h-full object-cover"
+                className="w-full max-h-96 object-contain rounded-xl"
                 muted
                 loop
                 playsInline
@@ -151,11 +151,11 @@ export const PromptCard: React.FC<PromptCardProps> = ({
                 src={prompt.media_url}
                 alt={prompt.title}
                 onError={() => setMediaError(true)}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                className="w-full max-h-96 object-contain rounded-xl transition-transform duration-300"
                 loading="lazy"
               />
             )}
-            <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-md text-[10px] text-slate-200 border border-white/10 flex items-center gap-1">
+            <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-md text-[10px] text-slate-200 border border-white/10 flex items-center gap-1 pointer-events-none">
               <ImageIcon className="w-3 h-3 text-purple-400" />
               <span>Preview</span>
             </div>
