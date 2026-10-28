@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import type { Database, MediaType } from '../types/database.types';
 import { promptsService, storageService } from '../services/promptService';
+import { ConfirmActionModal } from './ConfirmActionModal';
 
 type CategoryItem = Database['public']['Tables']['categories']['Row'];
 type PromptItem = Database['public']['Tables']['prompts']['Row'];
@@ -29,6 +30,7 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const [showConfirmEditModal, setShowConfirmEditModal] = useState(false);
   const [title, setTitle] = useState(promptToEdit?.title || '');
   const [description, setDescription] = useState(promptToEdit?.description || '');
   const [content, setContent] = useState(promptToEdit?.content || '');
@@ -93,6 +95,12 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
   const handleSubmit = async (publishStatus: boolean) => {
     if (!title.trim() || !content.trim()) {
       setErrorMsg('Título e Conteúdo do prompt são obrigatórios.');
+      return;
+    }
+
+    // Se estiver editando e ainda não confirmou, abre o modal de confirmação
+    if (promptToEdit && !showConfirmEditModal) {
+      setShowConfirmEditModal(true);
       return;
     }
 
@@ -419,10 +427,26 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
             ) : (
               <Rocket className="w-4 h-4" />
             )}
-            <span>{promptToEdit ? 'Atualizar Prompt' : 'Publicar prompt'}</span>
+            <span>{promptToEdit ? 'Salvar Alterações' : 'Publicar prompt'}</span>
           </button>
         </div>
       </div>
+
+      {/* Modal de Confirmação de Edição */}
+      <ConfirmActionModal
+        isOpen={showConfirmEditModal}
+        title="Confirmar Atualização do Prompt"
+        description={`Deseja realmente salvar as alterações feitas no prompt "${title}"? As informações anteriores serão atualizadas no banco de dados.`}
+        actionType="edit"
+        confirmLabel="Salvar Alterações"
+        cancelLabel="Voltar"
+        loading={submitting}
+        onConfirm={async () => {
+          setShowConfirmEditModal(false);
+          await handleSubmit(isPublished);
+        }}
+        onClose={() => setShowConfirmEditModal(false)}
+      />
     </div>
   );
 };

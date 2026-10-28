@@ -24,7 +24,6 @@ export const PromptCard: React.FC<PromptCardProps> = ({
 }) => {
   const [bookmarked, setBookmarked] = useState(false);
   const [mediaError, setMediaError] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const renderHighlightedContent = (text: string) => {
     const parts = text.split(/(\{\{[^}]+\}\}|\[[A-Z0-9_ -]+\])/g);
@@ -84,36 +83,18 @@ export const PromptCard: React.FC<PromptCardProps> = ({
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                 </button>
-                {confirmDelete ? (
-                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      onClick={() => onDeletePrompt?.(prompt.id)}
-                      className="px-1.5 py-0.5 rounded text-[10px] bg-rose-600 text-white font-bold"
-                    >
-                      Excluir
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConfirmDelete(false)}
-                      className="text-slate-400 text-[10px]"
-                    >
-                      X
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setConfirmDelete(true);
-                    }}
-                    title="Excluir prompt do banco"
-                    className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-white/5 transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeletePrompt?.(prompt.id);
+                  }}
+                  title="Excluir prompt do banco"
+                  className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-white/5 transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
               </>
             )}
 

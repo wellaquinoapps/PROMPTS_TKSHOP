@@ -19,6 +19,7 @@ import { PromptDetailsModal } from './components/PromptDetailsModal';
 import { CreatePromptModal } from './components/CreatePromptModal';
 import { LoginModal } from './components/LoginModal';
 import { AdminDashboardView } from './components/AdminDashboardView';
+import { ConfirmActionModal } from './components/ConfirmActionModal';
 import { categoriesService, promptsService } from './services/promptService';
 import type { Database } from './types/database.types';
 
@@ -42,11 +43,18 @@ export const App: React.FC = () => {
   const [editingPrompt, setEditingPrompt] = useState<PromptItem | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [deletePromptModal, setDeletePromptModal] = useState<{ isOpen: boolean; id: string; title: string }>({
+    isOpen: false,
+    id: '',
+    title: '',
+  });
 
   const handleDeletePrompt = async (promptId: string) => {
     try {
       await promptsService.deletePrompt(promptId);
       setPrompts((prev) => prev.filter((p) => p.id !== promptId));
+      setDeletePromptModal({ isOpen: false, id: '', title: '' });
     } catch (err: any) {
       alert(err.message || 'Erro ao excluir prompt.');
     }
@@ -396,7 +404,13 @@ export const App: React.FC = () => {
                         setEditingPrompt(p);
                         setIsCreateOpen(true);
                       }}
-                      onDeletePrompt={(id) => handleDeletePrompt(id)}
+                      onDeletePrompt={(id) =>
+                        setDeletePromptModal({
+                          isOpen: true,
+                          id,
+                          title: prompt.title,
+                        })
+                      }
                     />
                   );
                 })}
@@ -450,7 +464,7 @@ export const App: React.FC = () => {
         )}
 
         <button
-          onClick={() => signOut()}
+          onClick={() => setShowLogoutModal(true)}
           className="flex flex-col items-center gap-1 text-slate-400 hover:text-rose-400"
         >
           <LogOut className="w-4 h-4" />
@@ -484,6 +498,33 @@ export const App: React.FC = () => {
           }}
         />
       )}
+
+      {/* Modal de Confirmação de Logout */}
+      <ConfirmActionModal
+        isOpen={showLogoutModal}
+        title="Encerrar Sessão"
+        description="Tem certeza que deseja sair da sua conta na plataforma PromptHub?"
+        actionType="logout"
+        confirmLabel="Sair da Conta"
+        cancelLabel="Permanecer"
+        onConfirm={async () => {
+          setShowLogoutModal(false);
+          await signOut();
+        }}
+        onClose={() => setShowLogoutModal(false)}
+      />
+
+      {/* Modal de Confirmação de Exclusão de Prompt na Biblioteca */}
+      <ConfirmActionModal
+        isOpen={deletePromptModal.isOpen}
+        title="Excluir Prompt"
+        description={`Tem certeza que deseja excluir o prompt "${deletePromptModal.title}"? Esta ação é definitiva e removerá o item do Supabase.`}
+        actionType="delete"
+        confirmLabel="Excluir Definitivamente"
+        cancelLabel="Cancelar"
+        onConfirm={() => handleDeletePrompt(deletePromptModal.id)}
+        onClose={() => setDeletePromptModal({ isOpen: false, id: '', title: '' })}
+      />
     </div>
   );
 };

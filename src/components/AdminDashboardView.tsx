@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
 import { promptsService, categoriesService } from '../services/promptService';
+import { ConfirmActionModal } from './ConfirmActionModal';
 import type { Database, UserStatus, AppRole } from '../types/database.types';
 
 type ProfileItem = Database['public']['Tables']['profiles']['Row'];
@@ -41,6 +42,23 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
+
+  // Estados dos Modais de Confirmação
+  const [confirmModalData, setConfirmModalData] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    actionType: 'delete' | 'edit';
+    confirmLabel: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    description: '',
+    actionType: 'delete',
+    confirmLabel: 'Confirmar',
+    onConfirm: () => {},
+  });
 
   // Filtros
   const [userFilter, setUserFilter] = useState<'pending' | 'approved' | 'blocked' | 'all'>('pending');
@@ -453,30 +471,22 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                           </button>
                         )}
 
-                        {confirmDeleteUserId === u.id ? (
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              onClick={() => handleDeleteUser(u.id)}
-                              className="px-2.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold"
-                            >
-                              Confirmar Exclusão
-                            </button>
-                            <button
-                              onClick={() => setConfirmDeleteUserId(null)}
-                              className="px-2 py-1.5 text-xs text-slate-400 hover:text-white"
-                            >
-                              Cancelar
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setConfirmDeleteUserId(u.id)}
-                            title="Excluir definitivamente do Supabase"
-                            className="p-2 rounded-xl hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
+                        <button
+                          onClick={() =>
+                            setConfirmModalData({
+                              isOpen: true,
+                              title: 'Excluir Usuário',
+                              description: `Tem certeza que deseja excluir o usuário "${u.display_name || u.email}"? Esta ação apagará permanentemente o usuário e seus vínculos do Supabase.`,
+                              actionType: 'delete',
+                              confirmLabel: 'Excluir Usuário',
+                              onConfirm: () => handleDeleteUser(u.id),
+                            })
+                          }
+                          title="Excluir definitivamente do Supabase"
+                          className="p-2 rounded-xl hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </>
                     )}
                   </div>
@@ -535,30 +545,22 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                       <Edit3 className="w-4 h-4" />
                     </button>
 
-                    {confirmDeletePromptId === p.id ? (
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => handleDeletePrompt(p.id)}
-                          className="px-2.5 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-bold"
-                        >
-                          Confirmar Exclusão
-                        </button>
-                        <button
-                          onClick={() => setConfirmDeletePromptId(null)}
-                          className="px-2 py-1.5 text-xs text-slate-400 hover:text-white"
-                        >
-                          Cancelar
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setConfirmDeletePromptId(p.id)}
-                        className="p-2 rounded-xl hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 transition-colors"
-                        title="Excluir do Supabase"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
+                    <button
+                      onClick={() =>
+                        setConfirmModalData({
+                          isOpen: true,
+                          title: 'Excluir Prompt',
+                          description: `Tem certeza que deseja excluir o prompt "${p.title}"? O item será removido permanentemente da biblioteca no Supabase.`,
+                          actionType: 'delete',
+                          confirmLabel: 'Excluir Prompt',
+                          onConfirm: () => handleDeletePrompt(p.id),
+                        })
+                      }
+                      className="p-2 rounded-xl hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 transition-colors"
+                      title="Excluir do Supabase"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               );
@@ -688,30 +690,22 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                         <Edit3 className="w-3.5 h-3.5" />
                       </button>
 
-                      {confirmDeleteCatId === parent.id ? (
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => handleDeleteCategory(parent.id)}
-                            className="px-2 py-1 rounded bg-rose-600 text-white text-[10px] font-bold"
-                          >
-                            Excluir
-                          </button>
-                          <button
-                            onClick={() => setConfirmDeleteCatId(null)}
-                            className="text-slate-400 text-[10px]"
-                          >
-                            X
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setConfirmDeleteCatId(parent.id)}
-                          className="p-1.5 rounded-lg hover:bg-rose-500/20 text-slate-500 hover:text-rose-400"
-                          title="Excluir categoria"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
+                      <button
+                        onClick={() =>
+                          setConfirmModalData({
+                            isOpen: true,
+                            title: 'Excluir Categoria Principal',
+                            description: `Tem certeza que deseja excluir a categoria "${parent.name}"? As subcategorias e vínculos relacionados serão removidos.`,
+                            actionType: 'delete',
+                            confirmLabel: 'Excluir Categoria',
+                            onConfirm: () => handleDeleteCategory(parent.id),
+                          })
+                        }
+                        className="p-1.5 rounded-lg hover:bg-rose-500/20 text-slate-500 hover:text-rose-400"
+                        title="Excluir categoria"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
 
@@ -738,22 +732,22 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                             >
                               <Edit3 className="w-3 h-3" />
                             </button>
-                            {confirmDeleteCatId === sub.id ? (
-                              <button
-                                onClick={() => handleDeleteCategory(sub.id)}
-                                className="px-1.5 py-0.5 rounded bg-rose-600 text-white text-[10px] font-bold"
-                              >
-                                Sim
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => setConfirmDeleteCatId(sub.id)}
-                                className="p-1 text-slate-500 hover:text-rose-400"
-                                title="Excluir subcategoria"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            )}
+                            <button
+                              onClick={() =>
+                                setConfirmModalData({
+                                  isOpen: true,
+                                  title: 'Excluir Subcategoria',
+                                  description: `Tem certeza que deseja excluir a subcategoria "${sub.name}"?`,
+                                  actionType: 'delete',
+                                  confirmLabel: 'Excluir Subcategoria',
+                                  onConfirm: () => handleDeleteCategory(sub.id),
+                                })
+                              }
+                              className="p-1 text-slate-500 hover:text-rose-400"
+                              title="Excluir subcategoria"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
                           </div>
                         </div>
                       ))
@@ -830,6 +824,21 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Modal Reutilizável de Confirmação */}
+      <ConfirmActionModal
+        isOpen={confirmModalData.isOpen}
+        title={confirmModalData.title}
+        description={confirmModalData.description}
+        actionType={confirmModalData.actionType}
+        confirmLabel={confirmModalData.confirmLabel}
+        loading={!!actionLoading}
+        onConfirm={async () => {
+          await confirmModalData.onConfirm();
+          setConfirmModalData((prev) => ({ ...prev, isOpen: false }));
+        }}
+        onClose={() => setConfirmModalData((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };
