@@ -14,7 +14,7 @@ import {
   Check
 } from 'lucide-react';
 import type { Database, MediaType } from '../types/database.types';
-import { promptsService, storageService } from '../services/promptService';
+import { promptsService, storageService, platformsService } from '../services/promptService';
 import { ConfirmActionModal } from './ConfirmActionModal';
 
 type CategoryItem = Database['public']['Tables']['categories']['Row'];
@@ -44,10 +44,11 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
   const [videoStructure, setVideoStructure] = useState<'GANCHO' | 'MOVIMENTO' | 'CTA' | null>(
     (promptToEdit?.tags?.find((t) => t === 'GANCHO' || t === 'MOVIMENTO' || t === 'CTA') as any) || null
   );
-  // Plataformas / Modelos onde o prompt funciona melhor (persistidas em localStorage para customização total)
+  // Plataformas / Modelos onde o prompt funciona melhor (sincronizadas com o Supabase)
   const DEFAULT_PLATFORMS = [
+    'Gemini',
+    'ChatGPT',
     'Midjourney v6',
-    'ChatGPT-4o',
     'Claude 3.5',
     'Kling AI',
     'Luma Dream Machine',
@@ -55,7 +56,6 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
     'Sora',
     'Flux.1',
     'DALL-E 3',
-    'Stable Diffusion',
   ];
 
   const [availablePlatforms, setAvailablePlatforms] = useState<string[]>(() => {
@@ -66,6 +66,22 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
       return DEFAULT_PLATFORMS;
     }
   });
+
+  // Carrega opções salvas no Supabase
+  useEffect(() => {
+    let isMounted = true;
+    platformsService.listPlatforms().then((list) => {
+      if (isMounted && list && list.length > 0) {
+        setAvailablePlatforms(list);
+        try {
+          localStorage.setItem('prompt_platforms_options', JSON.stringify(list));
+        } catch {}
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const [newPlatformInput, setNewPlatformInput] = useState('');
   const [editingPlatform, setEditingPlatform] = useState<string | null>(null);
@@ -80,17 +96,18 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
     }
   };
 
-  const handleAddPlatform = () => {
+  const handleAddPlatform = async () => {
     const val = newPlatformInput.trim();
     if (val && !availablePlatforms.some((p) => p.toLowerCase() === val.toLowerCase())) {
       const updated = [...availablePlatforms, val];
       savePlatforms(updated);
       setSelectedPlatforms((prev) => [...prev, val]);
       setNewPlatformInput('');
+      await platformsService.addPlatform(val);
     }
   };
 
-  const handleDeletePlatform = (platform: string, e: React.MouseEvent) => {
+  const handleDeletePlatform = async (platform: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const updated = availablePlatforms.filter((p) => p !== platform);
     savePlatforms(updated);
@@ -98,6 +115,7 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
     if (editingPlatform === platform) {
       setEditingPlatform(null);
     }
+    await platformsService.deletePlatform(platform);
   };
 
   const handleStartEditPlatform = (platform: string, e: React.MouseEvent) => {
@@ -106,7 +124,7 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
     setEditPlatformInput(platform);
   };
 
-  const handleSaveEditPlatform = (oldPlatform: string, e: React.MouseEvent | React.KeyboardEvent) => {
+  const handleSaveEditPlatform = async (oldPlatform: string, e: React.MouseEvent | React.KeyboardEvent) => {
     e.stopPropagation();
     const val = editPlatformInput.trim();
     if (!val) {
@@ -117,6 +135,7 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
     savePlatforms(updated);
     setSelectedPlatforms((prev) => prev.map((p) => (p === oldPlatform ? val : p)));
     setEditingPlatform(null);
+    await platformsService.updatePlatform(oldPlatform, val);
   };
 
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(() => {
@@ -127,14 +146,6 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
     return matched.length > 0 ? matched : ['Midjourney v6'];
   });
 
-  const [tagInput, setTagInput] = useState('');
-  const [tags, setTags] = useState<string[]>(
-    promptToEdit?.tags?.filter(
-      (t) =>
-        !['UGC', 'POV', 'GANCHO', 'MOVIMENTO', 'CTA'].includes(t) &&
-        !availablePlatforms.some((p) => p.toLowerCase() === t.toLowerCase())
-    ) || []
-  );
   const [mediaUrl, setMediaUrl] = useState(promptToEdit?.media_url || '');
   const [mediaType, setMediaType] = useState<MediaType>(promptToEdit?.media_type || 'image');
   const [isPublished, setIsPublished] = useState(promptToEdit?.is_published ?? true);
@@ -143,30 +154,12 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Sugestões de variáveis para inserir rapidamente
-  const quickVariables = ['TEMA', 'ESTILO', 'ILUMINAÇÃO', 'ÂNGULO', 'PRODUTO'];
-
   const selectedCategoryObj = categories.find((c) => c.id === categoryId);
   const isVideoCategory =
     selectedCategoryObj?.slug === 'videos' ||
     selectedCategoryObj?.name?.toLowerCase().includes('vídeo') ||
     selectedCategoryObj?.name?.toLowerCase().includes('video') ||
     mediaType === 'video';
-
-  const handleAddVariable = (varName: string) => {
-    setContent((prev) => `${prev} {{${varName}}}`);
-  };
-
-  const handleAddTag = () => {
-    if (tagInput.trim() && !tags.includes(tagInput.trim())) {
-      setTags([...tags, tagInput.trim()]);
-      setTagInput('');
-    }
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter((t) => t !== tagToRemove));
-  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -212,7 +205,7 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
       if (styleSubcategory) specialTags.push(styleSubcategory);
       if (videoStructure && isVideoCategory) specialTags.push(videoStructure);
 
-      const combinedTags = Array.from(new Set([...specialTags, ...selectedPlatforms, ...tags]));
+      const combinedTags = Array.from(new Set([...specialTags, ...selectedPlatforms]));
 
       const payload = {
         title: title.trim(),
@@ -393,43 +386,21 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
             />
           </div>
 
-          {/* Conteúdo do Prompt com Injeção de Variáveis */}
+          {/* Conteúdo do Prompt */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs">
               <label className="font-semibold text-slate-200">
                 Conteúdo do prompt <span className="text-purple-400">*</span>
               </label>
-              <span className="text-purple-400 text-[11px] flex items-center gap-1">
-                <FileCode2 className="w-3.5 h-3.5" />
-                Variáveis ativas
-              </span>
-            </div>
-
-            {/* Pílulas de Injeção Rápida */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[11px] text-slate-400">INSERIR:</span>
-              {quickVariables.map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => handleAddVariable(v)}
-                  className="px-2 py-0.5 rounded-md bg-purple-950/60 border border-purple-700/50 hover:bg-purple-900 text-purple-300 font-mono text-[11px] transition-colors"
-                >
-                  + [{v}]
-                </button>
-              ))}
             </div>
 
             <textarea
               rows={5}
-              placeholder="Escreva a estrutura do prompt aqui. Use variáveis entre colchetes como {{TEMA}} para preenchimento dinâmico..."
+              placeholder="Escreva a estrutura do prompt aqui..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
               className="w-full p-4 rounded-xl bg-[#0c0d14] border border-[#24283e] font-mono text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-purple-500 transition-colors leading-relaxed"
             />
-            <p className="text-[11px] text-slate-400">
-              Dica: Toque nos botões acima para injetar variáveis com substituição facilitada.
-            </p>
           </div>
 
           {/* Prévia de resultado / Mídia */}
@@ -615,53 +586,6 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
                 <span>Adicionar</span>
               </button>
             </div>
-          </div>
-
-          {/* Tags & Palavras-chave */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-200">Tags & Palavras-chave</label>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                placeholder="Adicionar tag e teclar Enter..."
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddTag();
-                  }
-                }}
-                className="flex-1 px-3.5 py-2 rounded-xl bg-[#131522] border border-[#24283e] text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-purple-500"
-              />
-              <button
-                type="button"
-                onClick={handleAddTag}
-                className="px-3 py-2 rounded-xl bg-purple-600/80 hover:bg-purple-600 text-white text-xs font-medium"
-              >
-                +
-              </button>
-            </div>
-
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {tags.map((t) => (
-                  <span
-                    key={t}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-[#191c2b] text-purple-200 border border-purple-800/40"
-                  >
-                    <span>{t}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveTag(t)}
-                      className="text-slate-400 hover:text-white"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
         </div>
 

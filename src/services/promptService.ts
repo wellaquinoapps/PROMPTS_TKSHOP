@@ -213,6 +213,74 @@ export const promptsService = {
 };
 
 /**
+ * Serviços para Gerenciamento de Plataformas / Modelos (IAs Onde Funciona Melhor)
+ */
+export interface PlatformOption {
+  id: string;
+  name: string;
+  created_at?: string;
+}
+
+export const platformsService = {
+  async listPlatforms(): Promise<string[]> {
+    try {
+      const { data, error } = await (supabase
+        .from('platforms')
+        .select('name')
+        .order('name', { ascending: true }) as any);
+
+      if (error) {
+        // Se a tabela ainda não tiver sido criada no Supabase, faz fallback suave
+        console.warn('Tabela platforms não encontrada ou inacessível, usando local:', error.message);
+        const cached = localStorage.getItem('prompt_platforms_options');
+        return cached ? JSON.parse(cached) : ['Gemini', 'ChatGPT', 'Midjourney v6', 'Claude 3.5', 'Kling AI'];
+      }
+
+      if (data && data.length > 0) {
+        return data.map((d: any) => d.name);
+      }
+
+      return ['Gemini', 'ChatGPT', 'Midjourney v6', 'Claude 3.5', 'Kling AI'];
+    } catch {
+      const cached = localStorage.getItem('prompt_platforms_options');
+      return cached ? JSON.parse(cached) : ['Gemini', 'ChatGPT', 'Midjourney v6', 'Claude 3.5', 'Kling AI'];
+    }
+  },
+
+  async addPlatform(name: string): Promise<void> {
+    try {
+      await ((supabase as any)
+        .from('platforms')
+        .insert([{ name }]));
+    } catch (e) {
+      console.error('Erro ao adicionar plataforma no Supabase:', e);
+    }
+  },
+
+  async updatePlatform(oldName: string, newName: string): Promise<void> {
+    try {
+      await ((supabase as any)
+        .from('platforms')
+        .update({ name: newName })
+        .eq('name', oldName));
+    } catch (e) {
+      console.error('Erro ao atualizar plataforma no Supabase:', e);
+    }
+  },
+
+  async deletePlatform(name: string): Promise<void> {
+    try {
+      await ((supabase as any)
+        .from('platforms')
+        .delete()
+        .eq('name', name));
+    } catch (e) {
+      console.error('Erro ao excluir plataforma no Supabase:', e);
+    }
+  }
+};
+
+/**
  * Serviços de Supabase Storage para mídias
  */
 export const storageService = {

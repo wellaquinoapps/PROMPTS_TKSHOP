@@ -515,6 +515,62 @@ SELECT
     true
 WHERE NOT EXISTS (SELECT 1 FROM public.prompts WHERE slug = 'video-promocional-produto');
 
+-- ==============================================================================
+-- 10. TABELA DE PLATAFORMAS / MODELOS DE IA ("Onde funciona melhor")
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.platforms (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+-- Habilitar RLS
+ALTER TABLE public.platforms ENABLE ROW LEVEL SECURITY;
+
+-- Políticas de acesso para Platforms
+DROP POLICY IF EXISTS "Leitura pública de platforms" ON public.platforms;
+CREATE POLICY "Leitura pública de platforms"
+ON public.platforms
+FOR SELECT
+USING (true);
+
+DROP POLICY IF EXISTS "Usuários autenticados criam platforms" ON public.platforms;
+CREATE POLICY "Usuários autenticados criam platforms"
+ON public.platforms
+FOR INSERT
+TO authenticated
+WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Usuários autenticados atualizam platforms" ON public.platforms;
+CREATE POLICY "Usuários autenticados atualizam platforms"
+ON public.platforms
+FOR UPDATE
+TO authenticated
+USING (true);
+
+DROP POLICY IF EXISTS "Usuários autenticados removem platforms" ON public.platforms;
+CREATE POLICY "Usuários autenticados removem platforms"
+ON public.platforms
+FOR DELETE
+TO authenticated
+USING (true);
+
+-- Dados iniciais de Platforms (Inseridos caso a tabela esteja vazia)
+INSERT INTO public.platforms (name)
+VALUES 
+    ('Gemini'),
+    ('ChatGPT'),
+    ('Midjourney v6'),
+    ('Claude 3.5'),
+    ('Kling AI'),
+    ('Luma Dream Machine'),
+    ('Runway Gen-3'),
+    ('Sora'),
+    ('Flux.1'),
+    ('DALL-E 3')
+ON CONFLICT (name) DO NOTHING;
+
+
 -- 14. SEED SEGURO: Apenas as categorias 'Imagens' e 'Vídeos'
 INSERT INTO public.categories (id, name, slug, description)
 SELECT 
@@ -581,4 +637,60 @@ SELECT
     'image',
     true
 WHERE NOT EXISTS (SELECT 1 FROM public.prompts WHERE slug = 'video-promocional-produto');
+
+-- ==============================================================================
+-- 10. TABELA DE PLATAFORMAS / MODELOS DE IA ("Onde funciona melhor")
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.platforms (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+-- Habilitar RLS
+ALTER TABLE public.platforms ENABLE ROW LEVEL SECURITY;
+
+-- Políticas de acesso para Platforms
+DROP POLICY IF EXISTS "Leitura pública de platforms" ON public.platforms;
+CREATE POLICY "Leitura pública de platforms"
+ON public.platforms
+FOR SELECT
+USING (true);
+
+DROP POLICY IF EXISTS "Usuários autenticados criam platforms" ON public.platforms;
+CREATE POLICY "Usuários autenticados criam platforms"
+ON public.platforms
+FOR INSERT
+TO authenticated
+WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Usuários autenticados atualizam platforms" ON public.platforms;
+CREATE POLICY "Usuários autenticados atualizam platforms"
+ON public.platforms
+FOR UPDATE
+TO authenticated
+USING (true);
+
+DROP POLICY IF EXISTS "Usuários autenticados removem platforms" ON public.platforms;
+CREATE POLICY "Usuários autenticados removem platforms"
+ON public.platforms
+FOR DELETE
+TO authenticated
+USING (true);
+
+-- Dados iniciais de Platforms (Inseridos caso a tabela esteja vazia)
+INSERT INTO public.platforms (name)
+VALUES 
+    ('Gemini'),
+    ('ChatGPT'),
+    ('Midjourney v6'),
+    ('Claude 3.5'),
+    ('Kling AI'),
+    ('Luma Dream Machine'),
+    ('Runway Gen-3'),
+    ('Sora'),
+    ('Flux.1'),
+    ('DALL-E 3')
+ON CONFLICT (name) DO NOTHING;
+
 
