@@ -225,24 +225,24 @@ export const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#0c0d12] text-slate-100 flex flex-col font-sans selection:bg-purple-600 selection:text-white">
       {/* 1. Header Superior */}
-      <header className="sticky top-0 z-40 bg-[#0c0d12]/90 backdrop-blur-md border-b border-[#1b1e2c] px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4">
+      <header className="sticky top-0 z-40 bg-[#0c0d12]/90 backdrop-blur-md border-b border-[#1b1e2c] px-3 sm:px-6 md:px-8 py-3 flex items-center justify-between gap-2 sm:gap-4">
         {/* Logo */}
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-purple-600 flex items-center justify-center text-white shadow-lg shadow-purple-900/50">
-            <Sparkles className="w-5 h-5" />
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-purple-600 flex items-center justify-center text-white shadow-lg shadow-purple-900/50 shrink-0">
+            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div>
-            <h1 className="text-base sm:text-lg font-bold text-white tracking-tight leading-none">
+            <h1 className="text-sm sm:text-base md:text-lg font-bold text-white tracking-tight leading-none">
               WellPrompts
             </h1>
-            <span className="text-[10px] text-purple-400 font-mono tracking-wide">
+            <span className="text-[9px] sm:text-[10px] text-purple-400 font-mono tracking-wide hidden xs:inline block">
               TKSHOP CURATED PROMPTS
             </span>
           </div>
         </div>
 
-        {/* Busca Central (Desktop) */}
-        <div className="flex-1 max-w-md hidden sm:flex items-center relative">
+        {/* Busca Central (Desktop / Tablet) */}
+        <div className="flex-1 max-w-xs md:max-w-md hidden md:flex items-center relative mx-2">
           <Search className="absolute left-3.5 w-4 h-4 text-slate-500" />
           <input
             type="text"
@@ -260,27 +260,28 @@ export const App: React.FC = () => {
           </button>
         </div>
 
-        {/* Ações Desktop: Adicionar Prompt, Alternar Admin/Biblioteca e Sair */}
-        <div className="flex items-center gap-2.5">
-          {/* Botão Novo Prompt (visível no desktop para admin) */}
+        {/* Ações Desktop / Tablet */}
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          {/* Botão Novo Prompt (visível de tablet em diante para admin) */}
           {isAdmin && (
             <button
               onClick={() => {
                 setEditingPrompt(null);
                 setIsCreateOpen(true);
               }}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-md shadow-purple-900/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-md shadow-purple-900/40 transition-all hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
             >
               <Plus className="w-4 h-4" />
-              <span>Novo Prompt</span>
+              <span className="hidden md:inline">Novo Prompt</span>
+              <span className="md:hidden">Novo</span>
             </button>
           )}
 
-          {/* Botão Alternar Painel Admin / Biblioteca (visível no desktop para admin) */}
+          {/* Botão Alternar Painel Admin / Biblioteca (visível de tablet em diante para admin) */}
           {isAdmin && (
             <button
               onClick={() => setCurrentView(currentView === 'admin' ? 'library' : 'admin')}
-              className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
+              className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors whitespace-nowrap ${
                 currentView === 'admin'
                   ? 'bg-purple-950/60 text-purple-300 border-purple-500/50 shadow-sm shadow-purple-950/40'
                   : 'bg-[#131520] text-slate-300 border-[#23273c] hover:bg-[#1c1f30] hover:text-white'
@@ -289,12 +290,14 @@ export const App: React.FC = () => {
               {currentView === 'admin' ? (
                 <>
                   <Layers className="w-3.5 h-3.5" />
-                  <span>Ver Biblioteca</span>
+                  <span className="hidden md:inline">Ver Biblioteca</span>
+                  <span className="md:hidden">Biblioteca</span>
                 </>
               ) : (
                 <>
                   <Shield className="w-3.5 h-3.5 text-purple-400" />
-                  <span>Painel Admin</span>
+                  <span className="hidden md:inline">Painel Admin</span>
+                  <span className="md:hidden">Admin</span>
                 </>
               )}
             </button>
@@ -303,12 +306,12 @@ export const App: React.FC = () => {
           {/* Avatar do Usuário */}
           <div
             title={profile?.display_name || user.email || ''}
-            className="w-8 h-8 rounded-xl bg-purple-700/80 border border-purple-500/40 flex items-center justify-center text-xs font-bold text-white shadow-md cursor-default"
+            className="w-8 h-8 rounded-xl bg-purple-700/80 border border-purple-500/40 flex items-center justify-center text-xs font-bold text-white shadow-md cursor-default shrink-0"
           >
             {profile?.display_name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
           </div>
 
-          {/* Botão Sair da Conta (visível no desktop) */}
+          {/* Botão Sair da Conta (visível em tablet e PC) */}
           <button
             onClick={() => setShowLogoutModal(true)}
             title="Sair da conta"
@@ -319,8 +322,8 @@ export const App: React.FC = () => {
         </div>
       </header>
 
-      {/* 2. Campo de busca no mobile */}
-      <div className="sm:hidden px-4 pt-3">
+      {/* 2. Campo de busca no mobile / tablet vertical */}
+      <div className="md:hidden px-4 pt-3">
         <div className="relative flex items-center">
           <Search className="absolute left-3.5 w-4 h-4 text-slate-500" />
           <input
@@ -328,8 +331,15 @@ export const App: React.FC = () => {
             placeholder="Buscar prompts, modelos..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#131520] border border-[#23273c] text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-purple-500"
+            className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[#131520] border border-[#23273c] text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-purple-500"
           />
+          <button
+            onClick={() => loadData()}
+            className="absolute right-3 text-slate-500 hover:text-white"
+            title="Recarregar"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+          </button>
         </div>
       </div>
 
@@ -348,12 +358,12 @@ export const App: React.FC = () => {
       ) : (
         <>
           {/* 3. Categorias em Pílulas & Subcategoria de Estilo */}
-          <div className="px-4 sm:px-8 pt-4 pb-2 space-y-2.5">
+          <div className="px-3 sm:px-6 md:px-8 pt-3 sm:pt-4 pb-2 space-y-2.5">
             {/* Linha 1: Categorias Principais */}
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
               <button
                 onClick={() => setSelectedCategory(null)}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${selectedCategory === null
+                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap shrink-0 transition-all ${selectedCategory === null
                   ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40 border border-purple-400'
                   : 'bg-[#131520] text-slate-400 border border-[#23273c] hover:bg-[#1a1d2e]'
                   }`}
@@ -368,7 +378,7 @@ export const App: React.FC = () => {
                   <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
-                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${isSelected
+                    className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap shrink-0 transition-all ${isSelected
                       ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40 border border-purple-400'
                       : 'bg-[#131520] text-slate-400 border border-[#23273c] hover:bg-[#1a1d2e]'
                       }`}
@@ -380,13 +390,13 @@ export const App: React.FC = () => {
             </div>
 
             {/* Linha 2: Subcategorias de Estilo (UGC / POV) */}
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            <div className="flex items-center gap-2 text-xs overflow-x-auto no-scrollbar pb-1">
+              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">
                 Estilo:
               </span>
               <button
                 onClick={() => setSelectedStyle(null)}
-                className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${selectedStyle === null
+                className={`px-3 py-1 rounded-lg text-xs font-medium whitespace-nowrap shrink-0 transition-all ${selectedStyle === null
                   ? 'bg-[#1d2033] text-purple-300 border border-purple-700/60'
                   : 'text-slate-500 hover:text-slate-300'
                   }`}
@@ -399,7 +409,7 @@ export const App: React.FC = () => {
                   <button
                     key={style}
                     onClick={() => setSelectedStyle(isSelected ? null : style)}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${isSelected
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-all ${isSelected
                       ? 'bg-cyan-600 text-white border border-cyan-400 shadow-md shadow-cyan-950/40'
                       : 'bg-[#131520] text-slate-400 border border-[#23273c] hover:text-white'
                       }`}
@@ -412,13 +422,13 @@ export const App: React.FC = () => {
 
             {/* Linha 3: Filtro de Estrutura de Vídeo (GANCHO, MOVIMENTO, CTA) quando estiver na categoria Vídeos */}
             {isViewingVideos && (
-              <div className="flex items-center gap-2 text-xs pt-0.5 animate-in fade-in duration-200">
-                <span className="text-[11px] font-semibold text-purple-400 uppercase tracking-wider">
+              <div className="flex items-center gap-2 text-xs pt-0.5 overflow-x-auto no-scrollbar pb-1 animate-in fade-in duration-200">
+                <span className="text-[11px] font-semibold text-purple-400 uppercase tracking-wider shrink-0">
                   Etapa:
                 </span>
                 <button
                   onClick={() => setSelectedVideoStructure(null)}
-                  className={`px-2.5 py-0.5 rounded-lg text-xs font-medium transition-all ${selectedVideoStructure === null
+                  className={`px-2.5 py-0.5 rounded-lg text-xs font-medium whitespace-nowrap shrink-0 transition-all ${selectedVideoStructure === null
                     ? 'bg-purple-950/60 text-purple-300 border border-purple-700/60'
                     : 'text-slate-500 hover:text-slate-300'
                     }`}
@@ -433,7 +443,7 @@ export const App: React.FC = () => {
                       onClick={() =>
                         setSelectedVideoStructure(isSelected ? null : structure)
                       }
-                      className={`px-2.5 py-0.5 rounded-lg text-xs font-semibold transition-all ${isSelected
+                      className={`px-2.5 py-0.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-all ${isSelected
                         ? 'bg-purple-600 text-white border border-purple-400 shadow-sm shadow-purple-950/50'
                         : 'bg-[#131520] text-slate-400 border border-[#23273c] hover:text-white'
                         }`}
@@ -447,13 +457,13 @@ export const App: React.FC = () => {
           </div>
 
           {/* 4. Contador de Prompts & Ordenação */}
-          <div className="px-4 sm:px-8 py-3 flex items-center justify-between text-xs text-slate-400 border-b border-[#181a28]">
-            <div className="font-mono text-[11px] uppercase tracking-wider text-slate-400">
-              <span className="font-bold text-slate-200">{filteredPrompts.length}</span> PROMPTS CRIADOS
+          <div className="px-3 sm:px-6 md:px-8 py-2.5 sm:py-3 flex items-center justify-between text-xs text-slate-400 border-b border-[#181a28]">
+            <div className="font-mono text-[10px] sm:text-[11px] uppercase tracking-wider text-slate-400">
+              <span className="font-bold text-slate-200">{filteredPrompts.length}</span> PROMPTS CURADOS
             </div>
 
             <div className="flex items-center gap-1.5 text-xs text-slate-300">
-              <span>Ordenar:</span>
+              <span className="hidden xs:inline">Ordenar:</span>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
@@ -466,7 +476,7 @@ export const App: React.FC = () => {
           </div>
 
           {/* 5. Grade de Prompts (PromptGrid) */}
-          <main className="flex-1 px-4 sm:px-8 py-6">
+          <main className="flex-1 px-3 sm:px-6 md:px-8 py-4 sm:py-6">
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20 text-slate-500">
                 <Loader2 className="w-8 h-8 animate-spin text-purple-500 mb-2" />
@@ -492,7 +502,7 @@ export const App: React.FC = () => {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-4 lg:gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3.5 md:gap-4 lg:gap-5">
                 {filteredPrompts.map((prompt) => {
                   const cat = categories.find((c) => c.id === prompt.category_id);
                   return (

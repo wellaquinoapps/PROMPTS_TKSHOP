@@ -234,10 +234,10 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
-      <div className="relative w-full max-w-xl bg-[#0f1017] border border-[#23273c] rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[95vh] flex flex-col">
+      <div className="relative w-full max-w-xl bg-[#0f1017] border border-[#23273c] rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[96vh] sm:max-h-[92vh] flex flex-col">
         {/* Topo do Modal */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#1e2235] bg-[#121420]">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between px-3.5 sm:px-6 py-3 sm:py-4 border-b border-[#1e2235] bg-[#121420] shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={onClose}
               className="p-1 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors"
@@ -245,10 +245,10 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
               <X className="w-5 h-5" />
             </button>
             <div>
-              <h2 className="text-base font-bold text-white">
+              <h2 className="text-sm sm:text-base font-bold text-white leading-tight">
                 {promptToEdit ? 'Editar Prompt' : 'Criar novo prompt'}
               </h2>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[10px] sm:text-[11px] text-slate-400">
                 {isPublished ? 'Modo publicação ativa' : 'Salvo como rascunho'}
               </p>
             </div>
@@ -258,14 +258,14 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
             type="button"
             disabled={submitting}
             onClick={() => handleSubmit(false)}
-            className="px-3 py-1.5 rounded-xl border border-slate-700/80 hover:bg-white/5 text-xs text-slate-300 font-medium transition-colors"
+            className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl border border-slate-700/80 hover:bg-white/5 text-[11px] sm:text-xs text-slate-300 font-medium transition-colors"
           >
             Salvar rascunho
           </button>
         </div>
 
         {/* Formulário com Scroll */}
-        <div className="p-5 sm:p-6 overflow-y-auto space-y-4 flex-1">
+        <div className="p-3.5 sm:p-6 overflow-y-auto space-y-3.5 sm:space-y-4 flex-1">
           {errorMsg && (
             <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-300">
               {errorMsg}
@@ -590,11 +590,11 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
         </div>
 
         {/* Rodapé com Publicar */}
-        <div className="p-4 sm:p-5 border-t border-[#1e2235] bg-[#121420] flex items-center justify-between gap-3">
+        <div className="p-3 sm:p-5 border-t border-[#1e2235] bg-[#121420] flex items-center justify-between gap-2.5 sm:gap-3 shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-xl border border-slate-700/70 hover:bg-white/5 text-xs font-medium text-slate-300 transition-colors"
+            className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-slate-700/70 hover:bg-white/5 text-xs font-medium text-slate-300 transition-colors"
           >
             Cancelar
           </button>
@@ -603,7 +603,7 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
             type="button"
             disabled={submitting}
             onClick={() => handleSubmit(true)}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 px-5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-xs shadow-lg shadow-purple-900/40 transition-all disabled:opacity-50"
+            className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2 sm:py-2.5 px-4 sm:px-5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-xs shadow-lg shadow-purple-900/40 transition-all disabled:opacity-50"
           >
             {submitting ? (
               <Loader2 className="w-4 h-4 animate-spin" />

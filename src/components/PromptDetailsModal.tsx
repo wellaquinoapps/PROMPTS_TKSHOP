@@ -81,9 +81,9 @@ export const PromptDetailsModal: React.FC<PromptDetailsModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl bg-[#0f1017] border border-[#23273c] rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[95vh] flex flex-col">
+      <div className="relative w-full max-w-2xl bg-[#0f1017] border border-[#23273c] rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[96vh] sm:max-h-[92vh] flex flex-col">
         {/* Topo / Barra de Navegação */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-[#1e2235] bg-[#121420]/80 sticky top-0 z-10 backdrop-blur-md">
+        <div className="flex items-center justify-between px-3.5 sm:px-6 py-3 sm:py-3.5 border-b border-[#1e2235] bg-[#121420]/80 sticky top-0 z-10 backdrop-blur-md shrink-0">
           <button
             onClick={onClose}
             className="flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-white transition-colors"
@@ -289,7 +289,7 @@ export const PromptDetailsModal: React.FC<PromptDetailsModalProps> = ({
         </div>
 
         {/* Barra Fixa Inferior com Ação de Copiar */}
-        <div className="p-4 sm:p-5 border-t border-[#1e2235] bg-[#121420] flex items-center gap-3">
+        <div className="p-3 sm:p-5 border-t border-[#1e2235] bg-[#121420] flex items-center gap-3 shrink-0">
           <CopyPromptButton
             content={processedContent}
             variant="full"
