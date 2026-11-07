@@ -260,11 +260,62 @@ export const App: React.FC = () => {
           </button>
         </div>
 
-        {/* Avatar do Usuário */}
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-purple-700/80 border border-purple-500/40 flex items-center justify-center text-xs font-bold text-white shadow-md">
+        {/* Ações Desktop: Adicionar Prompt, Alternar Admin/Biblioteca e Sair */}
+        <div className="flex items-center gap-2.5">
+          {/* Botão Novo Prompt (visível no desktop para admin) */}
+          {isAdmin && (
+            <button
+              onClick={() => {
+                setEditingPrompt(null);
+                setIsCreateOpen(true);
+              }}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-md shadow-purple-900/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Novo Prompt</span>
+            </button>
+          )}
+
+          {/* Botão Alternar Painel Admin / Biblioteca (visível no desktop para admin) */}
+          {isAdmin && (
+            <button
+              onClick={() => setCurrentView(currentView === 'admin' ? 'library' : 'admin')}
+              className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
+                currentView === 'admin'
+                  ? 'bg-purple-950/60 text-purple-300 border-purple-500/50 shadow-sm shadow-purple-950/40'
+                  : 'bg-[#131520] text-slate-300 border-[#23273c] hover:bg-[#1c1f30] hover:text-white'
+              }`}
+            >
+              {currentView === 'admin' ? (
+                <>
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>Ver Biblioteca</span>
+                </>
+              ) : (
+                <>
+                  <Shield className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Painel Admin</span>
+                </>
+              )}
+            </button>
+          )}
+
+          {/* Avatar do Usuário */}
+          <div
+            title={profile?.display_name || user.email || ''}
+            className="w-8 h-8 rounded-xl bg-purple-700/80 border border-purple-500/40 flex items-center justify-center text-xs font-bold text-white shadow-md cursor-default"
+          >
             {profile?.display_name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
           </div>
+
+          {/* Botão Sair da Conta (visível no desktop) */}
+          <button
+            onClick={() => setShowLogoutModal(true)}
+            title="Sair da conta"
+            className="hidden sm:inline-flex items-center justify-center p-2 rounded-xl bg-[#131520] hover:bg-rose-950/40 border border-[#23273c] hover:border-rose-800/50 text-slate-400 hover:text-rose-300 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </header>
 
