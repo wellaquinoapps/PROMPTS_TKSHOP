@@ -27,7 +27,7 @@ type CategoryItem = Database['public']['Tables']['categories']['Row'];
 type PromptItem = Database['public']['Tables']['prompts']['Row'];
 
 export const App: React.FC = () => {
-  const { user, profile, isAdmin, isApproved, isPending, signOut, refreshProfile } = useAuth();
+  const { user, profile, isAdmin, isApproved, isPending, isLoading, signOut, refreshProfile } = useAuth();
 
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [prompts, setPrompts] = useState<PromptItem[]>([]);
@@ -100,10 +100,22 @@ export const App: React.FC = () => {
   };
 
   useEffect(() => {
-    if (user && isApproved) {
+    if (user?.id && isApproved) {
       loadData();
     }
-  }, [user, isApproved, selectedCategory, sortBy]);
+  }, [user?.id, isApproved, selectedCategory, sortBy]);
+
+  // Enquanto o Supabase restaura a sessão salva no localStorage, exibe tela de carregamento suave
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0c0d12] flex flex-col justify-center items-center">
+        <div className="w-10 h-10 rounded-2xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-purple-400 mb-3 animate-pulse">
+          <Sparkles className="w-5 h-5" />
+        </div>
+        <Loader2 className="w-5 h-5 animate-spin text-purple-500" />
+      </div>
+    );
+  }
 
   // Se o usuário não estiver logado, exibe diretamente o card centralizado limpo de login / criação de conta
   if (!user) {
@@ -221,7 +233,7 @@ export const App: React.FC = () => {
           </div>
           <div>
             <h1 className="text-base sm:text-lg font-bold text-white tracking-tight leading-none">
-              PromptHub
+              WellPrompts
             </h1>
             <span className="text-[10px] text-purple-400 font-mono tracking-wide">
               TKSHOP CURATED PROMPTS
@@ -291,8 +303,8 @@ export const App: React.FC = () => {
               <button
                 onClick={() => setSelectedCategory(null)}
                 className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${selectedCategory === null
-                    ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40 border border-purple-400'
-                    : 'bg-[#131520] text-slate-400 border border-[#23273c] hover:bg-[#1a1d2e]'
+                  ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40 border border-purple-400'
+                  : 'bg-[#131520] text-slate-400 border border-[#23273c] hover:bg-[#1a1d2e]'
                   }`}
               >
                 <Layers className="w-3.5 h-3.5" />
@@ -306,8 +318,8 @@ export const App: React.FC = () => {
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
                     className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${isSelected
-                        ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40 border border-purple-400'
-                        : 'bg-[#131520] text-slate-400 border border-[#23273c] hover:bg-[#1a1d2e]'
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40 border border-purple-400'
+                      : 'bg-[#131520] text-slate-400 border border-[#23273c] hover:bg-[#1a1d2e]'
                       }`}
                   >
                     <span>{cat.name}</span>
@@ -324,8 +336,8 @@ export const App: React.FC = () => {
               <button
                 onClick={() => setSelectedStyle(null)}
                 className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${selectedStyle === null
-                    ? 'bg-[#1d2033] text-purple-300 border border-purple-700/60'
-                    : 'text-slate-500 hover:text-slate-300'
+                  ? 'bg-[#1d2033] text-purple-300 border border-purple-700/60'
+                  : 'text-slate-500 hover:text-slate-300'
                   }`}
               >
                 Todos os Estilos
@@ -337,8 +349,8 @@ export const App: React.FC = () => {
                     key={style}
                     onClick={() => setSelectedStyle(isSelected ? null : style)}
                     className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${isSelected
-                        ? 'bg-cyan-600 text-white border border-cyan-400 shadow-md shadow-cyan-950/40'
-                        : 'bg-[#131520] text-slate-400 border border-[#23273c] hover:text-white'
+                      ? 'bg-cyan-600 text-white border border-cyan-400 shadow-md shadow-cyan-950/40'
+                      : 'bg-[#131520] text-slate-400 border border-[#23273c] hover:text-white'
                       }`}
                   >
                     {style}
@@ -355,11 +367,10 @@ export const App: React.FC = () => {
                 </span>
                 <button
                   onClick={() => setSelectedVideoStructure(null)}
-                  className={`px-2.5 py-0.5 rounded-lg text-xs font-medium transition-all ${
-                    selectedVideoStructure === null
-                      ? 'bg-purple-950/60 text-purple-300 border border-purple-700/60'
-                      : 'text-slate-500 hover:text-slate-300'
-                  }`}
+                  className={`px-2.5 py-0.5 rounded-lg text-xs font-medium transition-all ${selectedVideoStructure === null
+                    ? 'bg-purple-950/60 text-purple-300 border border-purple-700/60'
+                    : 'text-slate-500 hover:text-slate-300'
+                    }`}
                 >
                   Todas as Etapas
                 </button>
@@ -371,11 +382,10 @@ export const App: React.FC = () => {
                       onClick={() =>
                         setSelectedVideoStructure(isSelected ? null : structure)
                       }
-                      className={`px-2.5 py-0.5 rounded-lg text-xs font-semibold transition-all ${
-                        isSelected
-                          ? 'bg-purple-600 text-white border border-purple-400 shadow-sm shadow-purple-950/50'
-                          : 'bg-[#131520] text-slate-400 border border-[#23273c] hover:text-white'
-                      }`}
+                      className={`px-2.5 py-0.5 rounded-lg text-xs font-semibold transition-all ${isSelected
+                        ? 'bg-purple-600 text-white border border-purple-400 shadow-sm shadow-purple-950/50'
+                        : 'bg-[#131520] text-slate-400 border border-[#23273c] hover:text-white'
+                        }`}
                     >
                       {structure}
                     </button>
@@ -388,7 +398,7 @@ export const App: React.FC = () => {
           {/* 4. Contador de Prompts & Ordenação */}
           <div className="px-4 sm:px-8 py-3 flex items-center justify-between text-xs text-slate-400 border-b border-[#181a28]">
             <div className="font-mono text-[11px] uppercase tracking-wider text-slate-400">
-              <span className="font-bold text-slate-200">{filteredPrompts.length}</span> PROMPTS CURADOS
+              <span className="font-bold text-slate-200">{filteredPrompts.length}</span> PROMPTS CRIADOS
             </div>
 
             <div className="flex items-center gap-1.5 text-xs text-slate-300">
@@ -431,141 +441,141 @@ export const App: React.FC = () => {
                 </button>
               </div>
             ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-4 lg:gap-5">
-                  {filteredPrompts.map((prompt) => {
-                    const cat = categories.find((c) => c.id === prompt.category_id);
-                    return (
-                      <PromptCard
-                        key={prompt.id}
-                        prompt={prompt}
-                        categoryName={cat?.name}
-                        isAdmin={isAdmin}
-                        onOpenDetails={(p) => setActivePromptDetails(p)}
-                        onEditPrompt={(p) => {
-                          setEditingPrompt(p);
-                          setIsCreateOpen(true);
-                        }}
-                        onDeletePrompt={(id) =>
-                          setDeletePromptModal({
-                            isOpen: true,
-                            id,
-                            title: prompt.title,
-                          })
-                        }
-                      />
-                    );
-                  })}
-                </div>
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-4 lg:gap-5">
+                {filteredPrompts.map((prompt) => {
+                  const cat = categories.find((c) => c.id === prompt.category_id);
+                  return (
+                    <PromptCard
+                      key={prompt.id}
+                      prompt={prompt}
+                      categoryName={cat?.name}
+                      isAdmin={isAdmin}
+                      onOpenDetails={(p) => setActivePromptDetails(p)}
+                      onEditPrompt={(p) => {
+                        setEditingPrompt(p);
+                        setIsCreateOpen(true);
+                      }}
+                      onDeletePrompt={(id) =>
+                        setDeletePromptModal({
+                          isOpen: true,
+                          id,
+                          title: prompt.title,
+                        })
+                      }
+                    />
+                  );
+                })}
+              </div>
             )}
-              </main>
+          </main>
         </>
       )}
 
-          {/* 6. Barra Mobile com Acesso à Área Admin exclusivo para o Admin */}
-          <nav className="sm:hidden sticky bottom-0 z-40 bg-[#0c0d12]/95 backdrop-blur-md border-t border-[#1b1e2c] px-6 py-2.5 flex items-center justify-between text-[11px] text-slate-400">
-            <button
-              onClick={() => {
-                setCurrentView('library');
-                setSelectedCategory(null);
-                setSearchQuery('');
-              }}
-              className={`flex flex-col items-center gap-1 font-medium transition-colors ${currentView === 'library' ? 'text-purple-400' : 'text-slate-400 hover:text-white'
-                }`}
-            >
-              <Layers className="w-4 h-4" />
-              <span>Biblioteca</span>
-            </button>
+      {/* 6. Barra Mobile com Acesso à Área Admin exclusivo para o Admin */}
+      <nav className="sm:hidden sticky bottom-0 z-40 bg-[#0c0d12]/95 backdrop-blur-md border-t border-[#1b1e2c] px-6 py-2.5 flex items-center justify-between text-[11px] text-slate-400">
+        <button
+          onClick={() => {
+            setCurrentView('library');
+            setSelectedCategory(null);
+            setSearchQuery('');
+          }}
+          className={`flex flex-col items-center gap-1 font-medium transition-colors ${currentView === 'library' ? 'text-purple-400' : 'text-slate-400 hover:text-white'
+            }`}
+        >
+          <Layers className="w-4 h-4" />
+          <span>Biblioteca</span>
+        </button>
 
-            {isAdmin && (
-              <button
-                onClick={() => setCurrentView(currentView === 'admin' ? 'library' : 'admin')}
-                className={`flex flex-col items-center gap-1 font-medium transition-colors ${currentView === 'admin' ? 'text-purple-400' : 'text-slate-400 hover:text-white'
-                  }`}
-              >
-                <Shield className="w-4 h-4" />
-                <span>Admin</span>
-              </button>
-            )}
+        {isAdmin && (
+          <button
+            onClick={() => setCurrentView(currentView === 'admin' ? 'library' : 'admin')}
+            className={`flex flex-col items-center gap-1 font-medium transition-colors ${currentView === 'admin' ? 'text-purple-400' : 'text-slate-400 hover:text-white'
+              }`}
+          >
+            <Shield className="w-4 h-4" />
+            <span>Admin</span>
+          </button>
+        )}
 
-            {isAdmin && (
-              <button
-                onClick={() => {
-                  setEditingPrompt(null);
-                  setIsCreateOpen(true);
-                }}
-                className="flex flex-col items-center gap-1 text-slate-400 hover:text-white"
-              >
-                <div className="w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center text-white -mt-3 shadow-lg shadow-purple-900/60 border-2 border-[#0c0d12]">
-                  <Plus className="w-4 h-4" />
-                </div>
-                <span>Novo</span>
-              </button>
-            )}
-
-            <button
-              onClick={() => setShowLogoutModal(true)}
-              className="flex flex-col items-center gap-1 text-slate-400 hover:text-rose-400"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Sair</span>
-            </button>
-          </nav>
-
-          {/* Modais */}
-          {activePromptDetails && (
-            <PromptDetailsModal
-              prompt={activePromptDetails}
-              categoryName={
-                categories.find((c) => c.id === activePromptDetails.category_id)?.name
-              }
-              onClose={() => setActivePromptDetails(null)}
-            />
-          )}
-
-          {isCreateOpen && (
-            <CreatePromptModal
-              categories={categories}
-              promptToEdit={editingPrompt}
-              onClose={() => {
-                setIsCreateOpen(false);
-                setEditingPrompt(null);
-              }}
-              onSuccess={() => {
-                setIsCreateOpen(false);
-                setEditingPrompt(null);
-                loadData();
-              }}
-            />
-          )}
-
-          {/* Modal de Confirmação de Logout */}
-          <ConfirmActionModal
-            isOpen={showLogoutModal}
-            title="Encerrar Sessão"
-            description="Tem certeza que deseja sair da sua conta na plataforma PromptHub?"
-            actionType="logout"
-            confirmLabel="Sair da Conta"
-            cancelLabel="Permanecer"
-            onConfirm={async () => {
-              setShowLogoutModal(false);
-              await signOut();
+        {isAdmin && (
+          <button
+            onClick={() => {
+              setEditingPrompt(null);
+              setIsCreateOpen(true);
             }}
-            onClose={() => setShowLogoutModal(false)}
-          />
+            className="flex flex-col items-center gap-1 text-slate-400 hover:text-white"
+          >
+            <div className="w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center text-white -mt-3 shadow-lg shadow-purple-900/60 border-2 border-[#0c0d12]">
+              <Plus className="w-4 h-4" />
+            </div>
+            <span>Novo</span>
+          </button>
+        )}
 
-          {/* Modal de Confirmação de Exclusão de Prompt na Biblioteca */}
-          <ConfirmActionModal
-            isOpen={deletePromptModal.isOpen}
-            title="Excluir Prompt"
-            description={`Tem certeza que deseja excluir o prompt "${deletePromptModal.title}"? Esta ação é definitiva e removerá o item do Supabase.`}
-            actionType="delete"
-            confirmLabel="Excluir Definitivamente"
-            cancelLabel="Cancelar"
-            onConfirm={() => handleDeletePrompt(deletePromptModal.id)}
-            onClose={() => setDeletePromptModal({ isOpen: false, id: '', title: '' })}
-          />
-        </div>
-      );
+        <button
+          onClick={() => setShowLogoutModal(true)}
+          className="flex flex-col items-center gap-1 text-slate-400 hover:text-rose-400"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>Sair</span>
+        </button>
+      </nav>
+
+      {/* Modais */}
+      {activePromptDetails && (
+        <PromptDetailsModal
+          prompt={activePromptDetails}
+          categoryName={
+            categories.find((c) => c.id === activePromptDetails.category_id)?.name
+          }
+          onClose={() => setActivePromptDetails(null)}
+        />
+      )}
+
+      {isCreateOpen && (
+        <CreatePromptModal
+          categories={categories}
+          promptToEdit={editingPrompt}
+          onClose={() => {
+            setIsCreateOpen(false);
+            setEditingPrompt(null);
+          }}
+          onSuccess={() => {
+            setIsCreateOpen(false);
+            setEditingPrompt(null);
+            loadData();
+          }}
+        />
+      )}
+
+      {/* Modal de Confirmação de Logout */}
+      <ConfirmActionModal
+        isOpen={showLogoutModal}
+        title="Encerrar Sessão"
+        description="Tem certeza que deseja sair da sua conta na plataforma PromptHub?"
+        actionType="logout"
+        confirmLabel="Sair da Conta"
+        cancelLabel="Permanecer"
+        onConfirm={async () => {
+          setShowLogoutModal(false);
+          await signOut();
+        }}
+        onClose={() => setShowLogoutModal(false)}
+      />
+
+      {/* Modal de Confirmação de Exclusão de Prompt na Biblioteca */}
+      <ConfirmActionModal
+        isOpen={deletePromptModal.isOpen}
+        title="Excluir Prompt"
+        description={`Tem certeza que deseja excluir o prompt "${deletePromptModal.title}"? Esta ação é definitiva e removerá o item do Supabase.`}
+        actionType="delete"
+        confirmLabel="Excluir Definitivamente"
+        cancelLabel="Cancelar"
+        onConfirm={() => handleDeletePrompt(deletePromptModal.id)}
+        onClose={() => setDeletePromptModal({ isOpen: false, id: '', title: '' })}
+      />
+    </div>
+  );
 };
 
-      export default App;
+export default App;

@@ -78,7 +78,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, newSession) => {
+      async (event, newSession) => {
+        // Se for apenas renovação de token em background, não reseta nem reprocessa
+        if (event === 'TOKEN_REFRESHED') {
+          setSession(newSession);
+          return;
+        }
+
         setSession(newSession);
         setUser(newSession?.user ?? null);
         if (newSession?.user) {

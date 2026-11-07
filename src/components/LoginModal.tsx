@@ -110,7 +110,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           <div className="w-8 h-8 rounded-xl bg-purple-600/30 border border-purple-500/40 flex items-center justify-center text-purple-300">
             <Sparkles className="w-4 h-4" />
           </div>
-          <span className="font-bold text-white tracking-tight text-base">PromptHub</span>
+          <span className="font-bold text-white tracking-tight text-base">WellPrompts</span>
         </div>
 
         <div className="px-2.5 py-1 rounded-full bg-[#181a29] border border-[#262b42] text-[10px] text-slate-300 flex items-center gap-1.5">

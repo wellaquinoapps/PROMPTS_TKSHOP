@@ -12,4 +12,11 @@ const supabaseAnonKey =
   metaEnv.VITE_SUPABASE_ANON_KEY ||
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuemR4bWVsdWJjdWFlcGN2aGVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxMzI5NDgsImV4cCI6MjEwODcwODk0OH0.FwiUU_3cOo60MRbjuYGroan9SDZhI1gTDi20gRLql2o';
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.localStorage,
+  },
+});
