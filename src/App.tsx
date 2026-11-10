@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Search,
   Plus,
@@ -37,6 +37,11 @@ export const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'created_at' | 'title'>('created_at');
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const PAGE_SIZE = 10;
+  const observerTarget = useRef<HTMLDivElement | null>(null);
 
   // Modais e Telas
   const [currentView, setCurrentView] = useState<'library' | 'admin'>('library');
@@ -61,12 +66,13 @@ export const App: React.FC = () => {
     }
   };
 
-  // Carregar dados reais apenas se autenticado e aprovado
+  // Carregar dados iniciais (Página 1 com 10 prompts)
   const loadData = async () => {
     if (!user || !isApproved) return;
 
     try {
       setLoading(true);
+      setPage(1);
       const [fetchedCats, searchRes] = await Promise.allSettled([
         categoriesService.listCategories(),
         promptsService.searchPrompts({
@@ -74,6 +80,8 @@ export const App: React.FC = () => {
           categoryId: selectedCategory || undefined,
           sortBy,
           sortOrder: 'desc',
+          page: 1,
+          pageSize: PAGE_SIZE,
         }),
       ]);
 
@@ -90,7 +98,11 @@ export const App: React.FC = () => {
         searchRes.value &&
         searchRes.value.prompts
       ) {
-        setPrompts(searchRes.value.prompts as PromptItem[]);
+        const results = searchRes.value.prompts as PromptItem[];
+        setPrompts(results);
+        setHasMore(results.length === PAGE_SIZE);
+      } else {
+        setHasMore(false);
       }
     } catch (err) {
       console.error('Erro ao buscar dados do banco:', err);
@@ -98,6 +110,62 @@ export const App: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Carregar mais 10 prompts ao rolar para baixo (Infinite Scroll)
+  const loadMorePrompts = async () => {
+    if (loading || loadingMore || !hasMore || !user || !isApproved) return;
+
+    try {
+      setLoadingMore(true);
+      const nextPage = page + 1;
+      const res = await promptsService.searchPrompts({
+        query: searchQuery || undefined,
+        categoryId: selectedCategory || undefined,
+        sortBy,
+        sortOrder: 'desc',
+        page: nextPage,
+        pageSize: PAGE_SIZE,
+      });
+
+      if (res && res.prompts && res.prompts.length > 0) {
+        setPrompts((prev) => {
+          // Prevenir itens duplicados caso haja sobreposição
+          const existingIds = new Set(prev.map((p) => p.id));
+          const newItems = (res.prompts as PromptItem[]).filter((p) => !existingIds.has(p.id));
+          return [...prev, ...newItems];
+        });
+        setPage(nextPage);
+        setHasMore(res.prompts.length === PAGE_SIZE);
+      } else {
+        setHasMore(false);
+      }
+    } catch (err) {
+      console.error('Erro ao carregar mais prompts:', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  // Observador de scroll para ativar o carregamento automático dos próximos 10
+  useEffect(() => {
+    const target = observerTarget.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
+          loadMorePrompts();
+        }
+      },
+      { threshold: 0.1, rootMargin: '200px' }
+    );
+
+    observer.observe(target);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [hasMore, loading, loadingMore, page, selectedCategory, searchQuery, sortBy]);
 
   useEffect(() => {
     if (user?.id && isApproved) {
@@ -526,6 +594,23 @@ export const App: React.FC = () => {
                     />
                   );
                 })}
+              </div>
+            )}
+
+            {/* Elemento Sentinela para o Scroll Infinito */}
+            {!loading && filteredPrompts.length > 0 && (
+              <div ref={observerTarget} className="w-full py-6 flex flex-col items-center justify-center">
+                {loadingMore && (
+                  <div className="flex items-center gap-2 text-xs text-purple-400 bg-[#131520] border border-[#23273c] px-4 py-2 rounded-xl">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Carregando mais prompts...</span>
+                  </div>
+                )}
+                {!hasMore && (
+                  <p className="text-[11px] text-slate-500 font-mono tracking-wide">
+                    ✓ Todos os prompts foram carregados
+                  </p>
+                )}
               </div>
             )}
           </main>

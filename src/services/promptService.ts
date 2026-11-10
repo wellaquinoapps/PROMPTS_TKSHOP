@@ -103,7 +103,7 @@ export const promptsService = {
     pageSize?: number;
   }) {
     const page = params.page || 1;
-    const pageSize = params.pageSize || 20;
+    const pageSize = params.pageSize || 10;
     const offset = (page - 1) * pageSize;
 
     // Tentar chamada RPC de busca customizada
