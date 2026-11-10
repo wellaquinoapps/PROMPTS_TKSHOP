@@ -101,10 +101,47 @@ export const promptsService = {
     sortOrder?: 'asc' | 'desc';
     page?: number;
     pageSize?: number;
+    ids?: string[];
   }) {
     const page = params.page || 1;
     const pageSize = params.pageSize || 10;
     const offset = (page - 1) * pageSize;
+
+    // Se passou filtro de IDs específicos (ex: favoritos)
+    if (params.ids !== undefined) {
+      if (params.ids.length === 0) {
+        return {
+          prompts: [] as PromptRow[],
+          totalCount: 0,
+          page,
+          pageSize,
+          totalPages: 0,
+        };
+      }
+      let query = supabase
+        .from('prompts')
+        .select('*', { count: 'exact' })
+        .in('id', params.ids);
+
+      if (params.categoryId) {
+        query = query.eq('category_id', params.categoryId);
+      }
+      if (params.query) {
+        query = query.ilike('title', `%${params.query}%`);
+      }
+
+      const { data, count } = await (query
+        .order(params.sortBy || 'created_at', { ascending: params.sortOrder === 'asc' })
+        .range(offset, offset + pageSize - 1) as any);
+
+      return {
+        prompts: (data as PromptRow[]) || [],
+        totalCount: count || 0,
+        page,
+        pageSize,
+        totalPages: Math.ceil((count || 0) / pageSize)
+      };
+    }
 
     // Tentar chamada RPC de busca customizada
     const { data, error } = await (supabase.rpc('search_prompts', {
@@ -210,6 +247,44 @@ export const promptsService = {
 
     if (error) throw error;
   }
+};
+
+/**
+ * Serviços de Favoritos (por usuário, persistido no Supabase)
+ */
+export const favoritesService = {
+  async getFavoriteIds(userId: string): Promise<string[]> {
+    try {
+      const { data, error } = await ((supabase as any)
+        .from('favorites')
+        .select('prompt_id')
+        .eq('user_id', userId));
+
+      if (error) {
+        console.warn('Tabela favorites não encontrada ou inacessível:', error.message);
+        return [];
+      }
+      return (data || []).map((r: any) => r.prompt_id as string);
+    } catch {
+      return [];
+    }
+  },
+
+  async addFavorite(userId: string, promptId: string): Promise<void> {
+    const { error } = await ((supabase as any)
+      .from('favorites')
+      .insert([{ user_id: userId, prompt_id: promptId }]));
+    if (error && !error.message?.includes('duplicate')) throw error;
+  },
+
+  async removeFavorite(userId: string, promptId: string): Promise<void> {
+    const { error } = await ((supabase as any)
+      .from('favorites')
+      .delete()
+      .eq('user_id', userId)
+      .eq('prompt_id', promptId));
+    if (error) throw error;
+  },
 };
 
 /**

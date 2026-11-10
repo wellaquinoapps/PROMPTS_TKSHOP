@@ -11,7 +11,8 @@ import {
   RefreshCw,
   Clock,
   ShieldAlert,
-  Users
+  Users,
+  Bookmark,
 } from 'lucide-react';
 import { useAuth } from './context/AuthContext';
 import { PromptCard } from './components/PromptCard';
@@ -20,7 +21,7 @@ import { CreatePromptModal } from './components/CreatePromptModal';
 import { LoginModal } from './components/LoginModal';
 import { AdminDashboardView } from './components/AdminDashboardView';
 import { ConfirmActionModal } from './components/ConfirmActionModal';
-import { categoriesService, promptsService } from './services/promptService';
+import { categoriesService, promptsService, favoritesService } from './services/promptService';
 import type { Database } from './types/database.types';
 
 type CategoryItem = Database['public']['Tables']['categories']['Row'];
@@ -34,6 +35,8 @@ export const App: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedStyle, setSelectedStyle] = useState<'UGC' | 'POV' | null>(null);
   const [selectedVideoStructure, setSelectedVideoStructure] = useState<'GANCHO' | 'MOVIMENTO' | 'CTA' | null>(null);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'created_at' | 'title'>('created_at');
   const [loading, setLoading] = useState(false);
@@ -66,6 +69,35 @@ export const App: React.FC = () => {
     }
   };
 
+  // Alternar favorito (adiciona ou remove no Supabase e atualiza estado local)
+  const handleToggleFavorite = async (promptId: string) => {
+    if (!user) return;
+    const isFav = favoriteIds.has(promptId);
+    // Atualizar estado otimisticamente
+    setFavoriteIds((prev) => {
+      const next = new Set(prev);
+      if (isFav) next.delete(promptId);
+      else next.add(promptId);
+      return next;
+    });
+    try {
+      if (isFav) {
+        await favoritesService.removeFavorite(user.id, promptId);
+      } else {
+        await favoritesService.addFavorite(user.id, promptId);
+      }
+    } catch (err) {
+      // Reverter em caso de erro
+      console.error('Erro ao atualizar favorito:', err);
+      setFavoriteIds((prev) => {
+        const next = new Set(prev);
+        if (isFav) next.add(promptId);
+        else next.delete(promptId);
+        return next;
+      });
+    }
+  };
+
   // Carregar dados iniciais (Página 1 com 10 prompts)
   const loadData = async () => {
     if (!user || !isApproved) return;
@@ -73,6 +105,12 @@ export const App: React.FC = () => {
     try {
       setLoading(true);
       setPage(1);
+
+      // Buscar favoritos primeiro para garantir lista atualizada
+      const favIds = await favoritesService.getFavoriteIds(user.id);
+      const favSet = new Set(favIds);
+      setFavoriteIds(favSet);
+
       const [fetchedCats, searchRes] = await Promise.allSettled([
         categoriesService.listCategories(),
         promptsService.searchPrompts({
@@ -82,6 +120,7 @@ export const App: React.FC = () => {
           sortOrder: 'desc',
           page: 1,
           pageSize: PAGE_SIZE,
+          ids: showFavoritesOnly ? Array.from(favSet) : undefined,
         }),
       ]);
 
@@ -125,6 +164,7 @@ export const App: React.FC = () => {
         sortOrder: 'desc',
         page: nextPage,
         pageSize: PAGE_SIZE,
+        ids: showFavoritesOnly ? Array.from(favoriteIds) : undefined,
       });
 
       if (res && res.prompts && res.prompts.length > 0) {
@@ -171,7 +211,7 @@ export const App: React.FC = () => {
     if (user?.id && isApproved) {
       loadData();
     }
-  }, [user?.id, isApproved, selectedCategory, sortBy]);
+  }, [user?.id, isApproved, selectedCategory, sortBy, showFavoritesOnly]);
 
   // Enquanto o Supabase restaura a sessão salva no localStorage, exibe tela de carregamento suave
   if (isLoading) {
@@ -277,6 +317,7 @@ export const App: React.FC = () => {
     currentCategoryObj?.name?.toLowerCase().includes('video');
 
   const filteredPrompts = prompts.filter((p) => {
+    if (showFavoritesOnly && !favoriteIds.has(p.id)) return false;
     if (selectedCategory && p.category_id !== selectedCategory) return false;
     if (selectedStyle && (!p.tags || !p.tags.includes(selectedStyle))) return false;
     if (selectedVideoStructure && (!p.tags || !p.tags.includes(selectedVideoStructure))) return false;
@@ -430,8 +471,11 @@ export const App: React.FC = () => {
             {/* Linha 1: Categorias Principais */}
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
               <button
-                onClick={() => setSelectedCategory(null)}
-                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap shrink-0 transition-all ${selectedCategory === null
+                onClick={() => {
+                  setSelectedCategory(null);
+                  setShowFavoritesOnly(false);
+                }}
+                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap shrink-0 transition-all ${selectedCategory === null && !showFavoritesOnly
                   ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40 border border-purple-400'
                   : 'bg-[#131520] text-slate-400 border border-[#23273c] hover:bg-[#1a1d2e]'
                   }`}
@@ -440,12 +484,33 @@ export const App: React.FC = () => {
                 <span>Todos</span>
               </button>
 
+              {/* Botão / Filtro de Favoritos */}
+              <button
+                onClick={() => {
+                  setShowFavoritesOnly(!showFavoritesOnly);
+                }}
+                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap shrink-0 transition-all ${showFavoritesOnly
+                  ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40 border border-purple-400'
+                  : 'bg-[#131520] text-slate-400 border border-[#23273c] hover:bg-[#1a1d2e] hover:text-purple-300'
+                  }`}
+              >
+                <Bookmark className={`w-3.5 h-3.5 ${showFavoritesOnly ? 'fill-white text-white' : 'text-purple-400'}`} />
+                <span>Favoritos</span>
+                {favoriteIds.size > 0 && (
+                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${showFavoritesOnly ? 'bg-purple-800 text-purple-100' : 'bg-purple-950/80 text-purple-300 border border-purple-700/50'}`}>
+                    {favoriteIds.size}
+                  </span>
+                )}
+              </button>
+
               {categories.map((cat) => {
-                const isSelected = selectedCategory === cat.id;
+                const isSelected = selectedCategory === cat.id && !showFavoritesOnly;
                 return (
                   <button
                     key={cat.id}
-                    onClick={() => setSelectedCategory(cat.id)}
+                    onClick={() => {
+                      setSelectedCategory(cat.id);
+                    }}
                     className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap shrink-0 transition-all ${isSelected
                       ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40 border border-purple-400'
                       : 'bg-[#131520] text-slate-400 border border-[#23273c] hover:bg-[#1a1d2e]'
@@ -579,6 +644,8 @@ export const App: React.FC = () => {
                       prompt={prompt}
                       categoryName={cat?.name}
                       isAdmin={isAdmin}
+                      isFavorited={favoriteIds.has(prompt.id)}
+                      onToggleFavorite={handleToggleFavorite}
                       onOpenDetails={(p) => setActivePromptDetails(p)}
                       onEditPrompt={(p) => {
                         setEditingPrompt(p);

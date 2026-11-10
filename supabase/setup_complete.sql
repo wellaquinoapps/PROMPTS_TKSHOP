@@ -570,6 +570,47 @@ VALUES
     ('DALL-E 3')
 ON CONFLICT (name) DO NOTHING;
 
+-- ==============================================================================
+-- 10. TABELA DE FAVORITOS (FAVORITES)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.favorites (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    prompt_id UUID NOT NULL REFERENCES public.prompts(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+    UNIQUE(user_id, prompt_id)
+);
+
+-- Índices para busca rápida
+CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON public.favorites(user_id);
+CREATE INDEX IF NOT EXISTS idx_favorites_prompt_id ON public.favorites(prompt_id);
+
+-- Habilitar Row Level Security
+ALTER TABLE public.favorites ENABLE ROW LEVEL SECURITY;
+
+-- Políticas de acesso para Favorites (cada usuário acessa e gerencia os seus)
+DROP POLICY IF EXISTS "Usuários leem seus próprios favoritos" ON public.favorites;
+CREATE POLICY "Usuários leem seus próprios favoritos"
+ON public.favorites
+FOR SELECT
+TO authenticated
+USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Usuários criam seus próprios favoritos" ON public.favorites;
+CREATE POLICY "Usuários criam seus próprios favoritos"
+ON public.favorites
+FOR INSERT
+TO authenticated
+WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Usuários removem seus próprios favoritos" ON public.favorites;
+CREATE POLICY "Usuários removem seus próprios favoritos"
+ON public.favorites
+FOR DELETE
+TO authenticated
+USING (auth.uid() = user_id);
+
+
 
 -- 14. SEED SEGURO: Apenas as categorias 'Imagens' e 'Vídeos'
 INSERT INTO public.categories (id, name, slug, description)
@@ -692,5 +733,46 @@ VALUES
     ('Flux.1'),
     ('DALL-E 3')
 ON CONFLICT (name) DO NOTHING;
+
+-- ==============================================================================
+-- 10. TABELA DE FAVORITOS (FAVORITES)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.favorites (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    prompt_id UUID NOT NULL REFERENCES public.prompts(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+    UNIQUE(user_id, prompt_id)
+);
+
+-- Índices para busca rápida
+CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON public.favorites(user_id);
+CREATE INDEX IF NOT EXISTS idx_favorites_prompt_id ON public.favorites(prompt_id);
+
+-- Habilitar Row Level Security
+ALTER TABLE public.favorites ENABLE ROW LEVEL SECURITY;
+
+-- Políticas de acesso para Favorites (cada usuário acessa e gerencia os seus)
+DROP POLICY IF EXISTS "Usuários leem seus próprios favoritos" ON public.favorites;
+CREATE POLICY "Usuários leem seus próprios favoritos"
+ON public.favorites
+FOR SELECT
+TO authenticated
+USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Usuários criam seus próprios favoritos" ON public.favorites;
+CREATE POLICY "Usuários criam seus próprios favoritos"
+ON public.favorites
+FOR INSERT
+TO authenticated
+WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Usuários removem seus próprios favoritos" ON public.favorites;
+CREATE POLICY "Usuários removem seus próprios favoritos"
+ON public.favorites
+FOR DELETE
+TO authenticated
+USING (auth.uid() = user_id);
+
 
 

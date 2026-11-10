@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bookmark, Sparkles, CheckCircle2, Image as ImageIcon, Edit3, Trash2 } from 'lucide-react';
+import { Bookmark, Sparkles, Image as ImageIcon, Edit3, Trash2 } from 'lucide-react';
 import type { Database } from '../types/database.types';
 import { CopyPromptButton } from './CopyPromptButton';
 
@@ -9,20 +9,23 @@ interface PromptCardProps {
   prompt: PromptItem;
   categoryName?: string;
   isAdmin?: boolean;
+  isFavorited?: boolean;
   onOpenDetails: (prompt: PromptItem) => void;
   onEditPrompt?: (prompt: PromptItem) => void;
   onDeletePrompt?: (promptId: string) => void;
+  onToggleFavorite?: (promptId: string) => void;
 }
 
 export const PromptCard: React.FC<PromptCardProps> = ({
   prompt,
   categoryName,
   isAdmin = false,
+  isFavorited = false,
   onOpenDetails,
   onEditPrompt,
   onDeletePrompt,
+  onToggleFavorite,
 }) => {
-  const [bookmarked, setBookmarked] = useState(false);
   const [mediaError, setMediaError] = useState(false);
 
   const renderHighlightedContent = (text: string) => {
@@ -61,13 +64,12 @@ export const PromptCard: React.FC<PromptCardProps> = ({
               prompt.tags.slice(0, 2).map((t, idx) => (
                 <span
                   key={idx}
-                  className={`px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-semibold border truncate max-w-[70px] sm:max-w-none ${
-                    t === 'UGC' || t === 'POV'
+                  className={`px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-semibold border truncate max-w-[70px] sm:max-w-none ${t === 'UGC' || t === 'POV'
                       ? 'bg-cyan-950/60 text-cyan-300 border-cyan-800/50'
                       : t === 'GANCHO' || t === 'MOVIMENTO' || t === 'CTA'
-                      ? 'bg-purple-950/80 text-purple-200 border-purple-700/60'
-                      : 'bg-purple-950/60 text-purple-300 border border-purple-800/50'
-                  }`}
+                        ? 'bg-purple-950/80 text-purple-200 border-purple-700/60'
+                        : 'bg-purple-950/60 text-purple-300 border border-purple-800/50'
+                    }`}
                 >
                   {t}
                 </span>
@@ -113,13 +115,13 @@ export const PromptCard: React.FC<PromptCardProps> = ({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setBookmarked(!bookmarked);
+                onToggleFavorite?.(prompt.id);
               }}
-              title="Salvar nos favoritos"
+              title={isFavorited ? 'Remover dos favoritos' : 'Salvar nos favoritos'}
               className="p-1 rounded-lg text-slate-400 hover:text-white transition-colors"
             >
               <Bookmark
-                className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${bookmarked ? 'fill-purple-500 text-purple-500' : ''}`}
+                className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isFavorited ? 'fill-purple-500 text-purple-500' : ''}`}
               />
             </button>
           </div>
