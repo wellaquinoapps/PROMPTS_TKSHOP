@@ -43,7 +43,7 @@ export const App: React.FC = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const PAGE_SIZE = 10;
+  const PAGE_SIZE = 20;
   const observerTarget = useRef<HTMLDivElement | null>(null);
 
   // Modais e Telas
@@ -635,7 +635,7 @@ export const App: React.FC = () => {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3.5 md:gap-4 lg:gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-2 sm:gap-2.5 md:gap-3">
                 {filteredPrompts.map((prompt) => {
                   const cat = categories.find((c) => c.id === prompt.category_id);
                   return (

@@ -48,23 +48,23 @@ export const PromptCard: React.FC<PromptCardProps> = ({
   return (
     <div
       onClick={() => onOpenDetails(prompt)}
-      className="group relative bg-[#13151f] hover:bg-[#171926] border border-[#23263b] hover:border-purple-500/40 rounded-2xl p-2.5 sm:p-4 transition-all duration-300 flex flex-col justify-between cursor-pointer shadow-lg hover:shadow-purple-950/20 overflow-hidden"
+      className="group relative bg-[#13151f] hover:bg-[#171926] border border-[#23263b] hover:border-purple-500/40 rounded-2xl p-2 sm:p-2.5 transition-all duration-300 flex flex-col justify-between cursor-pointer shadow-lg hover:shadow-purple-950/20 overflow-hidden"
     >
       <div className="flex flex-col flex-1 min-w-0">
         {/* Cabeçalho do Card: Categorias & Ações de Admin */}
-        <div className="flex items-start justify-between gap-1 mb-2">
+        <div className="flex items-start justify-between gap-1 mb-1.5 sm:mb-2">
           {/* Tags e Categorias com wrap seguro */}
           <div className="flex items-center gap-1 flex-wrap flex-1 min-w-0">
             {categoryName && (
-              <span className="px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-medium bg-[#1d2030] text-slate-300 border border-[#2b3049] truncate max-w-[85px] sm:max-w-none">
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-[#1d2030] text-slate-300 border border-[#2b3049] truncate max-w-[70px] sm:max-w-[85px]">
                 {categoryName}
               </span>
             )}
             {prompt.tags &&
-              prompt.tags.slice(0, 2).map((t, idx) => (
+              prompt.tags.slice(0, 1).map((t, idx) => (
                 <span
                   key={idx}
-                  className={`px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-semibold border truncate max-w-[70px] sm:max-w-none ${t === 'UGC' || t === 'POV'
+                  className={`px-1.5 py-0.5 rounded text-[9px] font-semibold border truncate max-w-[65px] sm:max-w-[75px] ${t === 'UGC' || t === 'POV'
                       ? 'bg-cyan-950/60 text-cyan-300 border-cyan-800/50'
                       : t === 'GANCHO' || t === 'MOVIMENTO' || t === 'CTA'
                         ? 'bg-purple-950/80 text-purple-200 border-purple-700/60'
