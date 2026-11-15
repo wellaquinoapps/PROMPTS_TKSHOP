@@ -230,7 +230,10 @@ export const promptsService = {
   async updatePrompt(id: string, updates: Partial<Omit<PromptRow, 'id' | 'created_at' | 'updated_at'>>) {
     const { data, error } = await ((supabase
       .from('prompts') as any)
-      .update(updates)
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', id)
       .select()
       .single());

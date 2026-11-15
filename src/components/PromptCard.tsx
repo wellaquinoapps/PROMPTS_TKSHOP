@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bookmark, Sparkles, Image as ImageIcon, Edit3, Trash2 } from 'lucide-react';
+import { Bookmark, Sparkles, Image as ImageIcon, Edit3, Trash2, Clock } from 'lucide-react';
 import type { Database } from '../types/database.types';
 import { CopyPromptButton } from './CopyPromptButton';
 
@@ -44,6 +44,25 @@ export const PromptCard: React.FC<PromptCardProps> = ({
       return <span key={index}>{part}</span>;
     });
   };
+
+  const formatDate = (isoDate?: string | null) => {
+    if (!isoDate) return null;
+    try {
+      const d = new Date(isoDate);
+      return d.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+      });
+    } catch {
+      return null;
+    }
+  };
+
+  const isUpdated = prompt.updated_at && prompt.created_at && (
+    new Date(prompt.updated_at).getTime() - new Date(prompt.created_at).getTime() > 60000
+  );
+  const displayDate = isUpdated ? formatDate(prompt.updated_at) : formatDate(prompt.created_at);
 
   return (
     <div
@@ -177,11 +196,17 @@ export const PromptCard: React.FC<PromptCardProps> = ({
         </div>
       </div>
 
-      {/* Rodapé com botão Copiar */}
+      {/* Rodapé com data e botão Copiar */}
       <div className="pt-2 border-t border-[#1e2133] flex items-center justify-between gap-1 shrink-0">
-        <div className="flex items-center gap-1 text-[10px] text-slate-400">
-          <Sparkles className="w-3 h-3 text-purple-400 shrink-0" />
-          <span className="font-medium text-slate-300 hidden xs:inline">Curado</span>
+        <div className="flex items-center gap-1 text-[9px] sm:text-[10px] text-slate-400 min-w-0">
+          <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-purple-400 shrink-0" />
+          {displayDate ? (
+            <span className="truncate" title={isUpdated ? `Atualizado em: ${formatDate(prompt.updated_at)}` : `Criado em: ${formatDate(prompt.created_at)}`}>
+              {isUpdated ? `At: ${displayDate}` : displayDate}
+            </span>
+          ) : (
+            <span className="font-medium text-slate-300 hidden xs:inline">Curado</span>
+          )}
         </div>
 
         <CopyPromptButton

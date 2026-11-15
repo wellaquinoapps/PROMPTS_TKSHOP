@@ -12,7 +12,9 @@ import {
   Tag,
   Folder,
   Layers,
-  ChevronDown
+  ChevronDown,
+  Clock,
+  Calendar
 } from 'lucide-react';
 import type { Database } from '../types/database.types';
 import { CopyPromptButton } from './CopyPromptButton';
@@ -78,6 +80,26 @@ export const PromptDetailsModal: React.FC<PromptDetailsModalProps> = ({
 
   const processedContent = getProcessedContent();
   const hasVariables = Object.keys(variables).length > 0;
+
+  const formatFullDate = (isoDate?: string | null) => {
+    if (!isoDate) return null;
+    try {
+      const d = new Date(isoDate);
+      return d.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return null;
+    }
+  };
+
+  const isUpdated = prompt.updated_at && prompt.created_at && (
+    new Date(prompt.updated_at).getTime() - new Date(prompt.created_at).getTime() > 60000
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
@@ -153,9 +175,21 @@ export const PromptDetailsModal: React.FC<PromptDetailsModalProps> = ({
                 <span>Curadoria TKShop</span>
               </span>
               <span>•</span>
-              <span>Atualizado recentemente</span>
+              <span className="flex items-center gap-1" title="Data de criação">
+                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                <span>Criado em {formatFullDate(prompt.created_at) || 'Recente'}</span>
+              </span>
+              {isUpdated && (
+                <>
+                  <span>•</span>
+                  <span className="flex items-center gap-1 text-purple-300 font-medium" title="Data da última modificação">
+                    <Clock className="w-3.5 h-3.5 text-purple-400" />
+                    <span>Atualizado em {formatFullDate(prompt.updated_at)}</span>
+                  </span>
+                </>
+              )}
               <span>•</span>
-              <span className="text-purple-300 font-medium">Pronto para uso</span>
+              <span className="text-emerald-400 font-medium">Pronto para uso</span>
             </div>
           </div>
 
