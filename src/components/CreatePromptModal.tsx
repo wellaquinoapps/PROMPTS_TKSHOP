@@ -153,6 +153,7 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
 
   const selectedCategoryObj = categories.find((c) => c.id === categoryId);
   const isVideoCategory =
@@ -161,10 +162,7 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
     selectedCategoryObj?.name?.toLowerCase().includes('video') ||
     mediaType === 'video';
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const processFile = async (file: File) => {
     if (file.size > 25 * 1024 * 1024) {
       setErrorMsg('Arquivo muito grande. O limite máximo é de 25MB.');
       return;
@@ -183,6 +181,44 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await processFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!uploading) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (uploading) return;
+
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+      setErrorMsg('Por favor, solte apenas arquivos de imagem, GIF ou vídeo.');
+      return;
+    }
+
+    await processFile(file);
   };
 
   const handleSubmit = async (publishStatus: boolean) => {
@@ -409,7 +445,17 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
               Prévia de resultado (Mídia) <span className="text-slate-500 font-normal">Opcional</span>
             </label>
 
-            <div className="border border-dashed border-[#2b3049] rounded-2xl p-4 text-center bg-[#11131e] relative">
+            <div
+              onDragOver={handleDragOver}
+              onDragEnter={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`border border-dashed rounded-2xl p-4 text-center transition-all relative ${
+                isDragging
+                  ? 'border-purple-400 bg-purple-950/30 scale-[1.01]'
+                  : 'border-[#2b3049] bg-[#11131e]'
+              }`}
+            >
               {mediaUrl ? (
                 <div className="relative rounded-xl overflow-hidden max-h-48 border border-white/10">
                   {mediaType === 'video' ? (
@@ -427,7 +473,13 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-4">
-                  <div className="w-10 h-10 rounded-full bg-purple-950/60 border border-purple-800/40 flex items-center justify-center text-purple-400 mb-2">
+                  <div
+                    className={`w-10 h-10 rounded-full border flex items-center justify-center mb-2 transition-colors ${
+                      isDragging
+                        ? 'bg-purple-600 text-white border-purple-300'
+                        : 'bg-purple-950/60 border-purple-800/40 text-purple-400'
+                    }`}
+                  >
                     {uploading ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
@@ -435,7 +487,11 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
                     )}
                   </div>
                   <label className="cursor-pointer text-xs font-medium text-purple-300 hover:text-purple-200 transition-colors">
-                    <span>Toque para enviar imagem ou GIF</span>
+                    <span>
+                      {isDragging
+                        ? 'Solte o arquivo aqui para enviar'
+                        : 'Arraste e solte ou toque para enviar imagem, vídeo ou GIF'}
+                    </span>
                     <input
                       type="file"
                       accept="image/*,video/*"
@@ -444,7 +500,7 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
                       disabled={uploading}
                     />
                   </label>
-                  <p className="text-[10px] text-slate-500 mt-1">PNG, JPG, WebP ou MP4 até 25MB</p>
+                  <p className="text-[10px] text-slate-500 mt-1">PNG, JPG, WebP, GIF ou MP4 até 25MB</p>
                 </div>
               )}
 
