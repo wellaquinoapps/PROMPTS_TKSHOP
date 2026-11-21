@@ -150,6 +150,11 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
   const [mediaType, setMediaType] = useState<MediaType>(promptToEdit?.media_type || 'image');
   const [isPublished, setIsPublished] = useState(promptToEdit?.is_published ?? true);
 
+  // Mídias recém enviadas nesta sessão para limpeza se substituídas ou canceladas
+  const [newlyUploadedUrls, setNewlyUploadedUrls] = useState<string[]>([]);
+  // Mídias antigas que foram substituídas/removidas na edição para deletar ao salvar
+  const [mediaUrlsToDeleteOnSave, setMediaUrlsToDeleteOnSave] = useState<string[]>([]);
+
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -175,12 +180,46 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
       setMediaType(isVid ? 'video' : 'image');
 
       const res = await storageService.uploadMedia(file, 'prompts');
+
+      // Se já existia uma mídia que acabou de ser enviada antes nesta mesma edição/criação,
+      // podemos apagá-la imediatamente do storage para não acumular
+      if (mediaUrl && newlyUploadedUrls.includes(mediaUrl)) {
+        await storageService.deleteMediaByUrl(mediaUrl);
+      } else if (mediaUrl && promptToEdit?.media_url === mediaUrl) {
+        // Marcamos a mídia antiga prévia para exclusão ao confirmar o salvamento
+        setMediaUrlsToDeleteOnSave((prev) => [...prev, mediaUrl]);
+      }
+
+      setNewlyUploadedUrls((prev) => [...prev, res.publicUrl]);
       setMediaUrl(res.publicUrl);
     } catch (err: any) {
       setErrorMsg(err.message || 'Falha ao realizar upload da mídia.');
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleRemoveMedia = async () => {
+    if (!mediaUrl) return;
+
+    // Se a mídia removida foi enviada agora pelo usuário, remove imediatamente do storage
+    if (newlyUploadedUrls.includes(mediaUrl)) {
+      await storageService.deleteMediaByUrl(mediaUrl);
+      setNewlyUploadedUrls((prev) => prev.filter((u) => u !== mediaUrl));
+    } else if (promptToEdit?.media_url === mediaUrl) {
+      // Se for a mídia original do prompt em edição, marca para deletar no storage ao salvar
+      setMediaUrlsToDeleteOnSave((prev) => [...prev, mediaUrl]);
+    }
+
+    setMediaUrl('');
+  };
+
+  const handleCancelModal = async () => {
+    // Se o usuário fez upload mas resolveu cancelar/fechar o modal sem salvar, limpa os arquivos recém enviados
+    for (const url of newlyUploadedUrls) {
+      await storageService.deleteMediaByUrl(url);
+    }
+    onClose();
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -260,6 +299,13 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
         await promptsService.createPrompt(payload);
       }
 
+      // Se havia mídias anteriores marcadas para remoção após sucesso da edição
+      for (const oldUrl of mediaUrlsToDeleteOnSave) {
+        if (oldUrl !== mediaUrl) {
+          await storageService.deleteMediaByUrl(oldUrl);
+        }
+      }
+
       onSuccess();
     } catch (err: any) {
       setErrorMsg(err.message || 'Erro ao salvar o prompt.');
@@ -275,7 +321,7 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
         <div className="flex items-center justify-between px-3.5 sm:px-6 py-3 sm:py-4 border-b border-[#1e2235] bg-[#121420] shrink-0">
           <div className="flex items-center gap-2 sm:gap-3">
             <button
-              onClick={onClose}
+              onClick={handleCancelModal}
               className="p-1 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors"
             >
               <X className="w-5 h-5" />
@@ -465,7 +511,7 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
                   )}
                   <button
                     type="button"
-                    onClick={() => setMediaUrl('')}
+                    onClick={handleRemoveMedia}
                     className="absolute top-2 right-2 p-1.5 rounded-full bg-black/70 text-white hover:bg-rose-600 transition-colors"
                   >
                     <X className="w-4 h-4" />
@@ -649,7 +695,7 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
         <div className="p-3 sm:p-5 border-t border-[#1e2235] bg-[#121420] flex items-center justify-between gap-2.5 sm:gap-3 shrink-0">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleCancelModal}
             className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-slate-700/70 hover:bg-white/5 text-xs font-medium text-slate-300 transition-colors"
           >
             Cancelar

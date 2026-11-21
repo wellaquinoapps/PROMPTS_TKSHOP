@@ -243,6 +243,21 @@ export const promptsService = {
   },
 
   async deletePrompt(id: string) {
+    // Buscar a mídia associada antes de deletar o prompt para evitar órfãos no Storage
+    try {
+      const { data: promptData } = await (supabase
+        .from('prompts')
+        .select('media_url')
+        .eq('id', id)
+        .single() as any);
+
+      if (promptData?.media_url) {
+        await storageService.deleteMediaByUrl(promptData.media_url);
+      }
+    } catch (e) {
+      console.warn('Erro ao verificar/remover mídia associada do storage:', e);
+    }
+
     const { error } = await supabase
       .from('prompts')
       .delete()
@@ -362,6 +377,27 @@ export const platformsService = {
  * Serviços de Supabase Storage para mídias
  */
 export const storageService = {
+  extractPathFromUrl(url: string, bucket: string = 'prompt-media'): string | null {
+    if (!url) return null;
+    try {
+      // Formato: .../storage/v1/object/public/<bucket>/<path>
+      const marker = `/storage/v1/object/public/${bucket}/`;
+      const idx = url.indexOf(marker);
+      if (idx !== -1) {
+        return decodeURIComponent(url.substring(idx + marker.length).split('?')[0]);
+      }
+      // Formato alternativo caso contenha o bucket na URL
+      const altMarker = `/${bucket}/`;
+      const altIdx = url.indexOf(altMarker);
+      if (altIdx !== -1) {
+        return decodeURIComponent(url.substring(altIdx + altMarker.length).split('?')[0]);
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  },
+
   async uploadMedia(file: File, folder: string = 'prompts') {
     const fileExt = file.name.split('.').pop();
     const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
@@ -385,11 +421,26 @@ export const storageService = {
     };
   },
 
-  async deleteMedia(path: string) {
-    const { error } = await supabase.storage
-      .from('prompt-media')
-      .remove([path]);
+  async deleteMedia(path: string, bucket: string = 'prompt-media') {
+    if (!path) return;
+    try {
+      const { error } = await supabase.storage
+        .from(bucket)
+        .remove([path]);
 
-    if (error) throw error;
+      if (error) {
+        console.warn('Erro ao remover mídia do storage:', error.message);
+      }
+    } catch (e) {
+      console.warn('Exceção ao remover mídia do storage:', e);
+    }
+  },
+
+  async deleteMediaByUrl(url: string, bucket: string = 'prompt-media') {
+    if (!url) return;
+    const path = this.extractPathFromUrl(url, bucket);
+    if (path) {
+      await this.deleteMedia(path, bucket);
+    }
   }
 };
